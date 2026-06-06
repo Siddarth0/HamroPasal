@@ -5,8 +5,9 @@ config({ path: path.resolve(__dirname, '../../../.env') });
 
 import http from 'http';
 import app from './app';
-import { connectMongo } from './config/db.mongo';
+import { connectMongo, disconnectMongo } from './config/db.mongo';
 import { prisma } from './config/db.postgres';
+import { disconnectRedis } from './config/redis';
 
 const PORT = process.env.PORT ?? 4000;
 
@@ -26,7 +27,11 @@ async function bootstrap(): Promise<void> {
   const shutdown = async (signal: string) => {
     console.log(`\n⚠️  ${signal} — shutting down...`);
     httpServer.close(async () => {
-      await prisma.$disconnect();
+      await Promise.allSettled([
+        prisma.$disconnect(),
+        disconnectMongo(),
+        disconnectRedis(),
+      ]);
       console.log('✅ Connections closed. Exiting.');
       process.exit(0);
     });
