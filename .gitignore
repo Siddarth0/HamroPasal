@@ -1,0 +1,11 @@
+node_modules
+.next
+dist
+.turbo
+.env
+.env.local
+build
+coverage
+
+# Prisma generated client (run `npm run db:generate` to recreate)
+apps/api/src/generated
