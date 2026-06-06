@@ -12,13 +12,16 @@ import {
   sendOtpEmail,
   sendPasswordResetEmail,
 } from '@/modules/notifications/email.service';
+import { parseDurationToSeconds } from '@/shared/utils/duration';
+import { env } from '@/config/env';
 import type { Role } from '@/generated/prisma';
 
 /* ------------------------------------------------------------------ */
 /* Constants & Redis keys                                             */
 /* ------------------------------------------------------------------ */
 
-const REFRESH_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days, matches refresh JWT
+// Keep the Redis refresh-token TTL in lockstep with the refresh JWT expiry.
+const REFRESH_TTL_SECONDS = parseDurationToSeconds(env.JWT_REFRESH_EXPIRES_IN);
 const OTP_TTL_SECONDS = 10 * 60; // 10 minutes
 const OTP_TTL_MINUTES = 10;
 const MAX_OTP_ATTEMPTS = 5;

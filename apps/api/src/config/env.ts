@@ -1,47 +1,69 @@
 import path from "node:path";
 import { config } from "dotenv";
+import { z } from "zod";
 
 config({ path: path.resolve(__dirname, "../../../../.env") });
 
-export const env = {
-  NODE_ENV: process.env.NODE_ENV ?? "development",
-  PORT: Number(process.env.PORT ?? 4000),
+// Required vars throw at startup if missing; optional ones (future phases)
+// default to "" so the app boots without them configured yet.
+const required = z.string().min(1);
+const optional = z.string().default("");
 
-  CLIENT_URL: process.env.CLIENT_URL ?? "http://localhost:3000",
-  SELLER_URL: process.env.SELLER_URL ?? "http://localhost:3001",
-  ADMIN_URL: process.env.ADMIN_URL ?? "http://localhost:3002",
+const envSchema = z.object({
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  PORT: z.coerce.number().default(4000),
 
-  DATABASE_URL: process.env.DATABASE_URL!,
-  DIRECT_URL: process.env.DIRECT_URL!,
-  MONGO_URI: process.env.MONGO_URI!,
-  REDIS_URL: process.env.REDIS_URL!,
+  CLIENT_URL: z.string().default("http://localhost:3000"),
+  SELLER_URL: z.string().default("http://localhost:3001"),
+  ADMIN_URL: z.string().default("http://localhost:3002"),
 
-  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET!,
-  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET!,
+  DATABASE_URL: required,
+  DIRECT_URL: optional,
+  MONGO_URI: required,
+  REDIS_URL: required,
 
-  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID!,
-  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET!,
-  GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL!,
+  JWT_ACCESS_SECRET: required,
+  JWT_REFRESH_SECRET: required,
+  JWT_ACCESS_EXPIRES_IN: z.string().default("15m"),
+  JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
 
-  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME!,
-  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY!,
-  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET!,
+  GOOGLE_CLIENT_ID: optional,
+  GOOGLE_CLIENT_SECRET: optional,
+  GOOGLE_CALLBACK_URL: z
+    .string()
+    .default("http://localhost:4000/api/auth/google/callback"),
 
-  KHALTI_SECRET_KEY: process.env.KHALTI_SECRET_KEY!,
-  KHALTI_BASE_URL: process.env.KHALTI_BASE_URL ?? "https://dev.khalti.com/api/v2",
+  CLOUDINARY_CLOUD_NAME: optional,
+  CLOUDINARY_API_KEY: optional,
+  CLOUDINARY_API_SECRET: optional,
 
-  ESEWA_MERCHANT_CODE: process.env.ESEWA_MERCHANT_CODE!,
-  ESEWA_SUCCESS_URL: process.env.ESEWA_SUCCESS_URL!,
-  ESEWA_FAILURE_URL: process.env.ESEWA_FAILURE_URL!,
-  ESEWA_BASE_URL: process.env.ESEWA_BASE_URL ?? "https://rc-epay.esewa.com.np",
+  KHALTI_SECRET_KEY: optional,
+  KHALTI_BASE_URL: z.string().default("https://dev.khalti.com/api/v2"),
 
-  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY!,
-  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET!,
+  ESEWA_MERCHANT_CODE: optional,
+  ESEWA_SUCCESS_URL: optional,
+  ESEWA_FAILURE_URL: optional,
+  ESEWA_BASE_URL: z.string().default("https://rc-epay.esewa.com.np"),
 
-  RESEND_API_KEY: process.env.RESEND_API_KEY,
-  SMTP_HOST: process.env.SMTP_HOST ?? "smtp.gmail.com",
-  SMTP_PORT: Number(process.env.SMTP_PORT ?? 587),
-  SMTP_USER: process.env.SMTP_USER,
-  SMTP_PASS: process.env.SMTP_PASS,
-  EMAIL_FROM: process.env.EMAIL_FROM ?? "noreply@ecommerce.com",
-} as const;
+  STRIPE_SECRET_KEY: optional,
+  STRIPE_WEBHOOK_SECRET: optional,
+
+  RESEND_API_KEY: optional,
+  SMTP_HOST: z.string().default("smtp.gmail.com"),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_USER: optional,
+  SMTP_PASS: optional,
+  EMAIL_FROM: z.string().default("noreply@ecommerce.com"),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  const issues = parsed.error.issues
+    .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
+    .join("\n");
+  console.error(`❌ Invalid environment variables:\n${issues}`);
+  process.exit(1);
+}
+
+export const env = parsed.data;
