@@ -7,9 +7,320 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  CUSTOMER
+  SELLER
+  ADMIN
+}
+
+enum OauthProvider {
+  GOOGLE
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  COD
+  KHALTI
+  ESEWA
+  STRIPE
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum StoreStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
 
 model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  password          String?
+  name              String
+  phone             String?
+  avatarUrl         String?
+  role              Role      @default(CUSTOMER)
+  isEmailVerified   Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  oauthAccounts     OAuthAccount[]
+  addresses         Address[]
+  store             Store[]
+  orders            Order[]
+  loyaltyTxns       LoyaltyTransaction[]
+  couponRedemptions CouponRedemption[]
+
+
+  @@map("users")
+
+}
+
+model OAuthAccount {
+  id          String      @id @default(uuid())
+  userId      String
+  provider    OauthProvider
+  providerId  String
+  createdAt   DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@map("oauth_accounts")
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  userId      String
+  label       String   @default("Home")
+  fullName    String
+  phone       String
+  addressLine String
+  city        String
+  district    String
+  latitude    Float?
+  longitude   Float?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@map("addresses")
+}
+
+model Store {
+  id             String      @id @default(uuid())
+  ownerId        String      @unique
+  name           String
+  slug           String      @unique
+  description    String?
+  logoUrl        String?
+  coverUrl       String?
+  phone          String?
+  email          String?
+  addressLine    String?
+  city           String?
+  latitude       Float?
+  longitude      Float?
+  status         StoreStatus @default(PENDING)
+  commissionRate Float       @default(10)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  owner         User        @relation(fields:[ownerId], references: [id])
+  deliveryZones DeliveryZone[]
+  subOrders     SubOrder[]
+  payouts       Payout[]
+
+  @@map("stores")
+}
+
+model DeliveryZone {
+  id          String   @id @default(uuid())
+  storeId     String
+  name        String
+  distanceKm  Float
+  shippingFee Float
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  store  Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@map("delivery_zones")
+}
+
+model Order {
+  id                String        @id @default(uuid())
+  userId            String
+  addressId         String?
+  deliveryLat       Float?
+  deliveryLng       Float?
+  deliveryAddress   String?
+  totalAmount       Float
+  shippingFee       Float         @default(0)
+  discountAmount    Float         @default(0)
+  loyaltyPointsUsed Int           @default(0)
+  couponId          String?
+  status            OrderStatus   @default(PENDING)
+  paymentStatus     PaymentStatus @default(PENDING)
+  paymentMethod     PaymentMethod
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id])
+  address   Address?  @relation(fields: [addressId], references: [id])
+  coupon    Coupon?   @relation(fields: [couponId], references: [id])
+  subOrders SubOrder[]
+  payment   Payment?
+
+  @@map("orders")
+}
+
+model SubOrder {
+  id            String      @id @default(uuid())
+  orderId       String
+  storeId       String
+  subtotal      Float
+  shippingFee   Float       @default(0)
+  commissionFee Float       @default(0)
+  sellerEarning Float       @default(0)
+  status        OrderStatus @default(PENDING)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  order      Order       @relation(fields: [orderId], references: [id])
+  store      Store       @relation(fields: [storeId], references: [id])
+  orderItems OrderItem[]
+  payout     Payout?
+  returns    Return[]
+
+  @@map("sub_orders")
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  subOrderId String
+  productId  String
+  variantId  String?
+  name       String
+  imageUrl   String?
+  price      Float
+  quantity   Int
+  createdAt  DateTime @default(now())
+
+  subOrder SubOrder @relation(fields: [subOrderId], references: [id])
+
+  @@map("order_items")
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  orderId         String        @unique
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  amount          Float
+  currency        String        @default("NPR")
+  gatewayRef      String?
+  gatewayResponse Json?
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+model Coupon {
+  id             String    @id @default(uuid())
+  code           String    @unique
+  description    String?
+  discountType   String    // PERCENTAGE | FLAT
+  discountValue  Float
+  minOrderAmount Float     @default(0)
+  maxDiscount    Float?
+  usageLimit     Int?
+  usedCount      Int       @default(0)
+  isActive       Boolean   @default(true)
+  startsAt       DateTime  @default(now())
+  expiresAt      DateTime?
+  storeId        String?
+  createdAt      DateTime  @default(now())
+
+  orders      Order[]
+  redemptions CouponRedemption[]
+
+  @@map("coupons")
+}
+
+model CouponRedemption {
   id        String   @id @default(uuid())
-  email     String   @unique
+  couponId  String
+  userId    String
+  orderId   String?
   createdAt DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([couponId, userId])
+  @@map("coupon_redemptions")
+}
+
+model LoyaltyTransaction {
+  id          String   @id @default(uuid())
+  userId      String
+  points      Int
+  type        String   // EARNED | REDEEMED | EXPIRED | BONUS
+  description String?
+  orderId     String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("loyalty_transactions")
+}
+
+model Payout {
+  id          String       @id @default(uuid())
+  storeId     String
+  subOrderId  String       @unique
+  amount      Float
+  status      PayoutStatus @default(PENDING)
+  method      String?
+  reference   String?
+  processedAt DateTime?
+  createdAt   DateTime     @default(now())
+
+  store    Store    @relation(fields: [storeId], references: [id])
+  subOrder SubOrder @relation(fields: [subOrderId], references: [id])
+
+  @@map("payouts")
+}
+
+model Return {
+  id           String       @id @default(uuid())
+  subOrderId   String
+  reason       String
+  description  String?
+  status       ReturnStatus @default(REQUESTED)
+  refundAmount Float?
+  resolvedAt   DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  subOrder SubOrder @relation(fields: [subOrderId], references: [id])
+
+  @@map("returns")
 }
