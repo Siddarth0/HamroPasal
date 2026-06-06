@@ -6,8 +6,11 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import passport from 'passport';
 
 //------------Route imports-----------------
+import authRouter from '@/modules/auth/auth.route';
+import { errorHandler } from '@/shared/middlewares/error.handler';
 
 const app: Application = express();
 
@@ -38,6 +41,7 @@ app.use(compression());
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(passport.initialize());
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
@@ -49,9 +53,14 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 //------------API routes---------------------
+app.use('/api/auth', authRouter);
 
+//------------404 handler--------------------
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
+
+//------------Error handler------------------
+app.use(errorHandler);
 
 export default app;

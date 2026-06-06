@@ -7,9 +7,10 @@ import {
   registerUser,
   loginUser,
   refreshAccessToken,
-  verifyEmail as verifyEmailToken,
-  resendVerificationEmail,
+  verifyEmailOtp,
+  resendOtp,
   logoutUser,
+  createSession,
 } from './auth.service';
 import {
   registerSchema,
@@ -44,7 +45,7 @@ export const register = asyncHandler(async (req, res) => {
   ApiResponse.created(
     res,
     { user, accessToken },
-    'Registration successful. Please check your email to verify your account.'
+    'Registration successful. Check your email for the verification code.'
   );
 });
 
@@ -68,10 +69,10 @@ export const refreshToken = asyncHandler(async (req, res) => {
   ApiResponse.success(res, { accessToken }, 'Token refreshed');
 });
 
-//-----Verify email----------
+//-----Verify email (OTP)----------
 export const verifyEmail = asyncHandler(async (req, res) => {
-  const { token } = verifyEmailSchema.parse(req.body);
-  const { alreadyVerified } = await verifyEmailToken(token);
+  const { email, otp } = verifyEmailSchema.parse(req.body);
+  const { alreadyVerified } = await verifyEmailOtp(email, otp);
 
   ApiResponse.success(
     res,
@@ -80,15 +81,15 @@ export const verifyEmail = asyncHandler(async (req, res) => {
   );
 });
 
-//-----Resend verification----------
+//-----Resend verification (OTP)----------
 export const resendVerification = asyncHandler(async (req, res) => {
   const { email } = resendVerificationSchema.parse(req.body);
-  await resendVerificationEmail(email);
+  await resendOtp(email);
 
   ApiResponse.success(
     res,
     undefined,
-    'If an account exists for that email, a verification link has been sent.'
+    'If an account exists for that email, a verification code has been sent.'
   );
 });
 
@@ -98,4 +99,17 @@ export const logout = asyncHandler(async (req, res) => {
 
   res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
   ApiResponse.success(res, undefined, 'Logged out successfully');
+});
+
+//-----Google OAuth callback----------
+// Reached after passport validates the Google handshake and sets req.user.
+// Issues our own session, drops the refresh cookie, and bounces back to the
+// customer app with the access token.
+export const googleCallback = asyncHandler(async (req, res) => {
+  if (!req.user) throw new ApiError('Google authentication failed', 401);
+
+  const { accessToken, refreshToken } = await createSession(req.user.userId);
+  setRefreshCookie(res, refreshToken);
+
+  res.redirect(`${env.CLIENT_URL}/auth/callback?accessToken=${accessToken}`);
 });

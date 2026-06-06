@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 import { env } from '@/config/env';
-import { verificationEmailTemplate } from './email.templates';
+import { otpEmailTemplate } from './email.templates';
 
 const resend = new Resend(env.RESEND_API_KEY);
 
@@ -25,15 +25,14 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
   }
 };
 
-export const sendVerificationEmail = async (
+export const sendOtpEmail = async (
   to: string,
-  token: string,
+  otp: string,
+  ttlMinutes: number,
 ): Promise<void> => {
-  const verifyUrl = `${env.CLIENT_URL}/verify-email?token=${token}`;
-
   await sendEmail({
     to,
-    subject: 'Verify your email',
-    html: verificationEmailTemplate(verifyUrl),
+    subject: 'Your verification code',
+    html: otpEmailTemplate(otp, ttlMinutes),
   });
 };
