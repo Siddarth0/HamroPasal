@@ -76,7 +76,7 @@ model User {
 
   oauthAccounts     OAuthAccount[]
   addresses         Address[]
-  store             Store[]
+  store             Store?
   orders            Order[]
   loyaltyTxns       LoyaltyTransaction[]
   couponRedemptions CouponRedemption[]

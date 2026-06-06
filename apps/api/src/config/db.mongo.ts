@@ -1,18 +1,15 @@
 import mongoose, { Connection } from 'mongoose';
+import { env } from './env';
 
-export async function connectMongo(): Promise<void> {
-  const uri = process.env.MONGO_URI;
-  if (!uri) throw new Error('MONGO_URI is not defined');
+export const connectMongo = async(): Promise<void> => {
 
-  const conn: Connection = mongoose.connection;
+  mongoose.connection.on("connected", () => console.log("✅ MongoDB connected"));
+  mongoose.connection.on("error", (err) => console.error("❌ MongoDB error:", err));
+  mongoose.connection.on("disconnected", () => console.warn("⚠️ MongoDB disconnected"));
 
-  conn.on("connected", () => console.log("✅ MongoDB connected"));
-  conn.on("error", (err) => console.error("❌ MongoDB error:", err));
-  conn.on("disconnected", () => console.warn("⚠️ MongoDB disconnected"));
-
-  await mongoose.connect(uri, { dbName: 'ecommerce' });
+  await mongoose.connect(env.MONGO_URI, { dbName: 'ecommerce' });
 }
 
-export async function disconnectMongo(): Promise<void> {
+export const disconnectMongo = async(): Promise<void> => {
   await mongoose.disconnect();
 }

@@ -1,7 +1,8 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma';
+import { env } from './env';
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = env.DATABASE_URL;
 if (!connectionString) throw new Error('DATABASE_URL is not defined');
 
 
@@ -16,11 +17,11 @@ export const prisma =
   new PrismaClient({
     adapter,
     log:
-      process.env.NODE_ENV === 'development'
+      env.NODE_ENV === 'development'
         ? ['query', 'error', 'warn']
         : ['error'],
   });
 
-if (process.env.NODE_ENV !== 'production') {
+if (env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
