@@ -13,18 +13,19 @@ import {
   changeMyPassword,
 } from './auth.controller';
 import { authenticate } from '@/shared/middlewares/auth.guard';
+import { authLimiter } from '@/shared/middlewares/rate-limit';
 import { env } from '@/config/env';
 import { isGoogleOAuthConfigured } from './passport'; // side-effect: registers the Google strategy
 
 const router = Router();
 
-router.post('/register', register);
-router.post('/login', login);
+router.post('/register', authLimiter, register);
+router.post('/login', authLimiter, login);
 router.post('/refresh', refreshToken);
-router.post('/verify-email', verifyEmail);
-router.post('/resend-verification', resendVerification);
-router.post('/forgot-password', requestPasswordReset);
-router.post('/reset-password', submitPasswordReset);
+router.post('/verify-email', authLimiter, verifyEmail);
+router.post('/resend-verification', authLimiter, resendVerification);
+router.post('/forgot-password', authLimiter, requestPasswordReset);
+router.post('/reset-password', authLimiter, submitPasswordReset);
 router.post('/change-password', authenticate, changeMyPassword);
 router.post('/logout', authenticate, logout);
 
