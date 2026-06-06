@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { ZodError } from "zod";
 import { ApiError } from "../utils/api-error";
 
 export const errorHandler = (
@@ -9,6 +10,19 @@ export const errorHandler = (
 ): void => {
   if (err instanceof ApiError) {
     res.status(err.statusCode).json({ success: false, message: err.message });
+    return;
+  }
+
+  // Zod validation (v4 exposes `issues`, not `errors`)
+  if (err instanceof ZodError) {
+    const errors = err.issues.map((i) => ({
+      field: i.path.join("."),
+      message: i.message,
+    }));
+    const message = errors
+      .map((e) => (e.field ? `${e.field}: ${e.message}` : e.message))
+      .join(", ");
+    res.status(400).json({ success: false, message, errors });
     return;
   }
 
@@ -33,13 +47,6 @@ export const errorHandler = (
   }
   if (err.name === "TokenExpiredError") {
     res.status(401).json({ success: false, message: "Token expired." });
-    return;
-  }
-
-  // Zod validation
-  if (err.name === "ZodError") {
-    const messages = (err as any).errors?.map((e: any) => e.message).join(", ");
-    res.status(400).json({ success: false, message: messages || err.message });
     return;
   }
 
