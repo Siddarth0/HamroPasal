@@ -1,4 +1,8 @@
-import 'dotenv/config';
+import path from 'node:path';
+import { config } from 'dotenv';
+
+config({ path: path.resolve(__dirname, '../../../.env') });
+
 import http from 'http';
 import app from './app';
 import { connectMongo } from './config/db.mongo';
