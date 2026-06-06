@@ -13,6 +13,7 @@ import {
   createSession,
   forgotPassword,
   resetPassword,
+  changePassword,
 } from './auth.service';
 import {
   registerSchema,
@@ -21,6 +22,7 @@ import {
   resendVerificationSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  changePasswordSchema,
 } from './auth.validation';
 
 const REFRESH_COOKIE = 'refreshToken';
@@ -117,6 +119,16 @@ export const submitPasswordReset = asyncHandler(async (req, res) => {
   // Reset revokes the session — clear the now-stale refresh cookie.
   res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
   ApiResponse.success(res, undefined, 'Password reset successfully. Please log in.');
+});
+
+//-----Change password (authenticated)----------
+export const changeMyPassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+  await changePassword(req.user!.userId, currentPassword, newPassword);
+
+  // Session was revoked — clear the now-stale refresh cookie.
+  res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
+  ApiResponse.success(res, undefined, 'Password changed. Please log in again.');
 });
 
 //-----Logout----------

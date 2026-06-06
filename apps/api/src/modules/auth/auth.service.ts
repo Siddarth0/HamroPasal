@@ -256,6 +256,32 @@ export const resetPassword = async (
   await redis.del(refreshKey(user.id));
 };
 
+export const changePassword = async (
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { password: true },
+  });
+  // OAuth-only accounts have no password to change.
+  if (!user?.password) {
+    throw new ApiError('Password change is not available for this account', 400);
+  }
+
+  const valid = await comparePassword(currentPassword, user.password);
+  if (!valid) throw new ApiError('Current password is incorrect', 401);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: await hashPassword(newPassword) },
+  });
+
+  // Revoke the active session so other devices must re-authenticate.
+  await redis.del(refreshKey(userId));
+};
+
 /* ------------------------------------------------------------------ */
 /* Google OAuth — upsert user + linked oauth account                  */
 /* ------------------------------------------------------------------ */

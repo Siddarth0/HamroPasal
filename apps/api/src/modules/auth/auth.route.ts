@@ -10,6 +10,7 @@ import {
   googleCallback,
   requestPasswordReset,
   submitPasswordReset,
+  changeMyPassword,
 } from './auth.controller';
 import { authenticate } from '@/shared/middlewares/auth.guard';
 import { env } from '@/config/env';
@@ -24,6 +25,7 @@ router.post('/verify-email', verifyEmail);
 router.post('/resend-verification', resendVerification);
 router.post('/forgot-password', requestPasswordReset);
 router.post('/reset-password', submitPasswordReset);
+router.post('/change-password', authenticate, changeMyPassword);
 router.post('/logout', authenticate, logout);
 
 //------------Google OAuth------------
