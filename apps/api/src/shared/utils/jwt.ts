@@ -12,3 +12,13 @@ export const verifyAccessToken = (token: string): { userId: string } =>
 
 export const verifyRefreshToken = (token: string): { userId: string } =>
   jwt.verify(token, env.JWT_REFRESH_SECRET) as { userId: string };
+
+export const generateEmailVerifyToken = (userId: string): string =>
+  jwt.sign({ userId, type: "email-verify" }, env.JWT_ACCESS_SECRET, {
+    expiresIn: "24h",
+  });
+
+export const verifyEmailVerifyToken = (
+  token: string
+): { userId: string; type: string } =>
+  jwt.verify(token, env.JWT_ACCESS_SECRET) as { userId: string; type: string };

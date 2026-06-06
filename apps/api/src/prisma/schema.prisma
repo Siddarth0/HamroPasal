@@ -70,6 +70,7 @@ model User {
   avatarUrl         String?
   role              Role      @default(CUSTOMER)
   isEmailVerified   Boolean   @default(false)
+  refreshToken      String?
   isActive          Boolean   @default(true)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt

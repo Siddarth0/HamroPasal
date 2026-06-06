@@ -3,16 +3,10 @@ import { verifyAccessToken } from "../utils/jwt";
 import { prisma } from "../../config/db.postgres";
 import { ApiError } from "../utils/api-error";
 
-export interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    role: "CUSTOMER" | "SELLER" | "ADMIN";
-    storeId?: string;
-  };
-}
+export type AuthRequest = Request;
 
 export const authenticate = async (
-  req: AuthRequest,
+  req: Request,
   _res: Response,
   next: NextFunction
 ): Promise<void> => {

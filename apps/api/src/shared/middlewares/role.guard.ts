@@ -1,10 +1,9 @@
-import { NextFunction } from 'express';
-import { AuthRequest } from './auth.guard';
+import { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../utils/api-error';
 
 export const authorize =
   (...roles: string[]) =>
-  (req: AuthRequest, _res: Response, next: NextFunction): void => {
+  (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user || !roles.includes(req.user.role)) {
       return next(new ApiError('Forbidden: insufficient permissions', 403));
     }
