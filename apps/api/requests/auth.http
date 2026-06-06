@@ -87,6 +87,16 @@ Content-Type: application/json
   "password": "newpassword123"
 }
 
+### Change password (authenticated; revokes session)
+POST {{baseUrl}}/auth/change-password
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "{{password}}",
+  "newPassword": "newpassword123"
+}
+
 ### Logout (needs access token)
 POST {{baseUrl}}/auth/logout
 Authorization: Bearer {{login.response.body.$.data.accessToken}}
