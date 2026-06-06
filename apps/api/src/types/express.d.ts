@@ -1,16 +1,12 @@
-import type { Role } from '@/generated/prisma';
+import type { AuthPrincipal } from 'shared-types';
 
 // Augments Express' Request with the principal set by the `authenticate`
-// middleware (see shared/middlewares/auth.guard.ts). Kept here for now; may be
-// re-homed into packages/shared-types during Phase 1.
+// middleware (see shared/middlewares/auth.guard.ts). The shape is the canonical
+// AuthPrincipal contract from the shared-types package.
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        userId: string;
-        role: Role;
-        storeId?: string;
-      };
+      user?: AuthPrincipal;
     }
   }
 }
