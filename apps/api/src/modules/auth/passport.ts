@@ -38,7 +38,11 @@ if (isGoogleOAuthConfigured) {
           });
 
           // Becomes req.user — matches the AuthPrincipal shape.
-          return done(null, { userId: user.id, role: user.role });
+          return done(null, {
+            userId: user.id,
+            role: user.role,
+            isEmailVerified: user.isEmailVerified,
+          });
         } catch (err) {
           return done(err as Error);
         }

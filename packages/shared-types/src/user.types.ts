@@ -21,6 +21,7 @@ export interface PublicUser {
 export interface AuthPrincipal {
   userId: string;
   role: Role;
+  isEmailVerified: boolean;
   storeId?: string;
 }
 

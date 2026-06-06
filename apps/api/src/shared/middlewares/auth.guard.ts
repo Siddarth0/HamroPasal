@@ -20,7 +20,13 @@ export const authenticate = async (
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true, isActive: true, store: { select: { id: true } } },
+      select: {
+        id: true,
+        role: true,
+        isActive: true,
+        isEmailVerified: true,
+        store: { select: { id: true } },
+      },
     });
 
     if (!user) throw new ApiError("User not found", 401);
@@ -29,6 +35,7 @@ export const authenticate = async (
     req.user = {
       userId: user.id,
       role: user.role,
+      isEmailVerified: user.isEmailVerified,
       storeId: user.store?.id,
     };
 

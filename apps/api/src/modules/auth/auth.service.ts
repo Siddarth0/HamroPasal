@@ -269,14 +269,14 @@ export const upsertGoogleUser = async (profile: {
   // 1. Already linked? Return that user.
   const linked = await prisma.oAuthAccount.findUnique({
     where: { provider_providerId: { provider: 'GOOGLE', providerId: profile.providerId } },
-    select: { user: { select: { id: true, role: true } } },
+    select: { user: { select: { id: true, role: true, isEmailVerified: true } } },
   });
   if (linked) return linked.user;
 
   // 2. Email already registered (password account)? Link Google to it.
   const existing = await prisma.user.findUnique({
     where: { email: profile.email },
-    select: { id: true, role: true },
+    select: { id: true, role: true, isEmailVerified: true },
   });
   if (existing) {
     await prisma.oAuthAccount.create({
@@ -296,7 +296,7 @@ export const upsertGoogleUser = async (profile: {
         create: { provider: 'GOOGLE', providerId: profile.providerId },
       },
     },
-    select: { id: true, role: true },
+    select: { id: true, role: true, isEmailVerified: true },
   });
   return created;
 };
