@@ -11,12 +11,16 @@ import {
   resendOtp,
   logoutUser,
   createSession,
+  forgotPassword,
+  resetPassword,
 } from './auth.service';
 import {
   registerSchema,
   loginSchema,
   verifyEmailSchema,
   resendVerificationSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from './auth.validation';
 
 const REFRESH_COOKIE = 'refreshToken';
@@ -91,6 +95,28 @@ export const resendVerification = asyncHandler(async (req, res) => {
     undefined,
     'If an account exists for that email, a verification code has been sent.'
   );
+});
+
+//-----Forgot password (sends reset OTP)----------
+export const requestPasswordReset = asyncHandler(async (req, res) => {
+  const { email } = forgotPasswordSchema.parse(req.body);
+  await forgotPassword(email);
+
+  ApiResponse.success(
+    res,
+    undefined,
+    'If an account exists for that email, a password reset code has been sent.'
+  );
+});
+
+//-----Reset password (with OTP)----------
+export const submitPasswordReset = asyncHandler(async (req, res) => {
+  const { email, otp, password } = resetPasswordSchema.parse(req.body);
+  await resetPassword(email, otp, password);
+
+  // Reset revokes the session — clear the now-stale refresh cookie.
+  res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
+  ApiResponse.success(res, undefined, 'Password reset successfully. Please log in.');
 });
 
 //-----Logout----------

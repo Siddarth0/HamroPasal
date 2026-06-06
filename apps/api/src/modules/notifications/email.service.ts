@@ -33,6 +33,24 @@ export const sendOtpEmail = async (
   await sendEmail({
     to,
     subject: 'Your verification code',
-    html: otpEmailTemplate(otp, ttlMinutes),
+    html: otpEmailTemplate(otp, ttlMinutes, {
+      heading: 'Verify your email',
+      intro: 'Use the code below to verify your email address and activate your account.',
+    }),
+  });
+};
+
+export const sendPasswordResetEmail = async (
+  to: string,
+  otp: string,
+  ttlMinutes: number,
+): Promise<void> => {
+  await sendEmail({
+    to,
+    subject: 'Your password reset code',
+    html: otpEmailTemplate(otp, ttlMinutes, {
+      heading: 'Reset your password',
+      intro: 'Use the code below to reset your password.',
+    }),
   });
 };

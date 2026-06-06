@@ -23,3 +23,13 @@ export const verifyEmailSchema = z.object({
 export const resendVerificationSchema = z.object({
   email: z.email(),
 });
+
+export const forgotPasswordSchema = z.object({
+  email: z.email(),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.email(),
+  otp: z.string().regex(/^\d{6}$/, 'Code must be 6 digits'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});

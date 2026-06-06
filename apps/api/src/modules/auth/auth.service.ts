@@ -8,7 +8,10 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
 } from '@/shared/utils/jwt';
-import { sendOtpEmail } from '@/modules/notifications/email.service';
+import {
+  sendOtpEmail,
+  sendPasswordResetEmail,
+} from '@/modules/notifications/email.service';
 import type { Role } from '@/generated/prisma';
 
 /* ------------------------------------------------------------------ */
@@ -20,9 +23,13 @@ const OTP_TTL_SECONDS = 10 * 60; // 10 minutes
 const OTP_TTL_MINUTES = 10;
 const MAX_OTP_ATTEMPTS = 5;
 
+type OtpPurpose = 'verify' | 'pwreset';
+
 const refreshKey = (userId: string) => `auth:refresh:${userId}`;
-const otpKey = (email: string) => `auth:otp:${email.toLowerCase()}`;
-const otpAttemptsKey = (email: string) => `auth:otp:attempts:${email.toLowerCase()}`;
+const otpKey = (purpose: OtpPurpose, email: string) =>
+  `auth:otp:${purpose}:${email.toLowerCase()}`;
+const otpAttemptsKey = (purpose: OtpPurpose, email: string) =>
+  `auth:otp:attempts:${purpose}:${email.toLowerCase()}`;
 
 // Single source of truth for the user fields safe to return to clients.
 const publicUserSelect = {
@@ -52,12 +59,40 @@ export const createSession = async (userId: string) => {
 /* OTP helpers                                                        */
 /* ------------------------------------------------------------------ */
 
-const issueOtp = async (email: string): Promise<void> => {
+/** Generates a 6-digit OTP, stores it (with TTL) under the given purpose, and returns it. */
+const generateAndStoreOtp = async (
+  purpose: OtpPurpose,
+  email: string,
+): Promise<string> => {
   const otp = randomInt(0, 1_000_000).toString().padStart(6, '0');
-  await redis.set(otpKey(email), otp, 'EX', OTP_TTL_SECONDS);
-  await redis.del(otpAttemptsKey(email));
-  // sendOtpEmail swallows its own errors, so a mail outage never blocks signup.
-  await sendOtpEmail(email, otp, OTP_TTL_MINUTES);
+  await redis.set(otpKey(purpose, email), otp, 'EX', OTP_TTL_SECONDS);
+  await redis.del(otpAttemptsKey(purpose, email)); // reset attempt counter on reissue
+  return otp;
+};
+
+/**
+ * Validates an OTP for the given purpose with brute-force protection, then
+ * consumes it (deletes the code + attempt counter) on success.
+ * Throws ApiError on missing/expired/invalid code or too many attempts.
+ */
+const consumeOtp = async (
+  purpose: OtpPurpose,
+  email: string,
+  otp: string,
+): Promise<void> => {
+  const stored = await redis.get(otpKey(purpose, email));
+  if (!stored) throw new ApiError('Code expired or not found', 400);
+
+  const attempts = await redis.incr(otpAttemptsKey(purpose, email));
+  if (attempts === 1) await redis.expire(otpAttemptsKey(purpose, email), OTP_TTL_SECONDS);
+  if (attempts > MAX_OTP_ATTEMPTS) {
+    await redis.del(otpKey(purpose, email), otpAttemptsKey(purpose, email));
+    throw new ApiError('Too many incorrect attempts. Please request a new code.', 429);
+  }
+
+  if (stored !== otp) throw new ApiError('Invalid code', 400);
+
+  await redis.del(otpKey(purpose, email), otpAttemptsKey(purpose, email));
 };
 
 /* ------------------------------------------------------------------ */
@@ -81,7 +116,10 @@ export const registerUser = async (data: {
     select: publicUserSelect,
   });
 
-  await issueOtp(user.email);
+  const otp = await generateAndStoreOtp('verify', user.email);
+  // sendOtpEmail swallows its own errors, so a mail outage never blocks signup.
+  await sendOtpEmail(user.email, otp, OTP_TTL_MINUTES);
+
   const { accessToken, refreshToken } = await createSession(user.id);
 
   return { user, accessToken, refreshToken };
@@ -153,23 +191,12 @@ export const verifyEmailOtp = async (email: string, otp: string) => {
   if (!user) throw new ApiError('Invalid or expired verification code', 400);
   if (user.isEmailVerified) return { alreadyVerified: true };
 
-  const stored = await redis.get(otpKey(email));
-  if (!stored) throw new ApiError('Verification code expired or not found', 400);
-
-  const attempts = await redis.incr(otpAttemptsKey(email));
-  if (attempts === 1) await redis.expire(otpAttemptsKey(email), OTP_TTL_SECONDS);
-  if (attempts > MAX_OTP_ATTEMPTS) {
-    await redis.del(otpKey(email), otpAttemptsKey(email));
-    throw new ApiError('Too many incorrect attempts. Please request a new code.', 429);
-  }
-
-  if (stored !== otp) throw new ApiError('Invalid verification code', 400);
+  await consumeOtp('verify', email, otp);
 
   await prisma.user.update({
     where: { id: user.id },
     data: { isEmailVerified: true },
   });
-  await redis.del(otpKey(email), otpAttemptsKey(email));
 
   return { alreadyVerified: false };
 };
@@ -183,7 +210,47 @@ export const resendOtp = async (email: string): Promise<void> => {
   // Don't reveal whether the email exists or is already verified.
   if (!user || user.isEmailVerified) return;
 
-  await issueOtp(email);
+  const otp = await generateAndStoreOtp('verify', email);
+  await sendOtpEmail(email, otp, OTP_TTL_MINUTES);
+};
+
+/* ------------------------------------------------------------------ */
+/* Password reset via OTP                                             */
+/* ------------------------------------------------------------------ */
+
+export const forgotPassword = async (email: string): Promise<void> => {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, password: true },
+  });
+
+  // Silent for non-existent accounts and OAuth-only users (no password to reset).
+  if (!user || !user.password) return;
+
+  const otp = await generateAndStoreOtp('pwreset', email);
+  await sendPasswordResetEmail(email, otp, OTP_TTL_MINUTES);
+};
+
+export const resetPassword = async (
+  email: string,
+  otp: string,
+  newPassword: string,
+): Promise<void> => {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  });
+  if (!user) throw new ApiError('Invalid or expired code', 400);
+
+  await consumeOtp('pwreset', email, otp);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: await hashPassword(newPassword) },
+  });
+
+  // Invalidate any active session so old refresh tokens stop working.
+  await redis.del(refreshKey(user.id));
 };
 
 /* ------------------------------------------------------------------ */
