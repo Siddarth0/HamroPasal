@@ -1,9 +1,12 @@
 import { z } from 'zod';
 
-// Public registration may only create CUSTOMER or SELLER accounts.
-// Each Next.js app sends its own role; ADMIN is never self-registerable.
+const emailSchema = z.preprocess(
+  (v) => (typeof v === 'string' ? v.trim().toLowerCase() : v),
+  z.email(),
+);
+
 export const registerSchema = z.object({
-  email: z.email(),
+  email: emailSchema,
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
   phone: z.string().optional(),
@@ -11,25 +14,25 @@ export const registerSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.email(),
+  email: emailSchema,
   password: z.string().min(8),
 });
 
 export const verifyEmailSchema = z.object({
-  email: z.email(),
+  email: emailSchema,
   otp: z.string().regex(/^\d{6}$/, 'Code must be 6 digits'),
 });
 
 export const resendVerificationSchema = z.object({
-  email: z.email(),
+  email: emailSchema,
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.email(),
+  email: emailSchema,
 });
 
 export const resetPasswordSchema = z.object({
-  email: z.email(),
+  email: emailSchema,
   otp: z.string().regex(/^\d{6}$/, 'Code must be 6 digits'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
