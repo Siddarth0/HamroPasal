@@ -7,6 +7,9 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import passport from 'passport';
+import swaggerUi from 'swagger-ui-express';
+import { apiReference } from '@scalar/express-api-reference';
+import { openapiDocument } from '@/docs/openapi';
 
 //------------Route imports-----------------
 import authRouter from '@/modules/auth/auth.route';
@@ -59,6 +62,14 @@ if (process.env.NODE_ENV === 'development') {
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timeStamp: new Date().toISOString() });
 });
+
+//------------API docs------------------------
+// Raw spec, Swagger UI (/docs), and Scalar reference (/reference).
+app.get('/openapi.json', (_req: Request, res: Response) => {
+  res.json(openapiDocument);
+});
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiDocument));
+app.use('/reference', apiReference({ content: openapiDocument }));
 
 //------------API routes---------------------
 app.use('/api/auth', authRouter);
