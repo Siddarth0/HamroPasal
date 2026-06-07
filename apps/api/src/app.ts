@@ -13,6 +13,8 @@ import authRouter from '@/modules/auth/auth.route';
 import usersRouter from '@/modules/users/users.route';
 import storesRouter from '@/modules/stores/stores.route';
 import shippingRouter from '@/modules/shipping/shipping.route';
+import categoriesRouter from '@/modules/categories/categories.route';
+import productsRouter from '@/modules/products/products.route';
 import { errorHandler } from '@/shared/middlewares/error.handler';
 
 const app: Application = express();
@@ -60,6 +62,8 @@ app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/stores', storesRouter);
 app.use('/api/shipping', shippingRouter);
+app.use('/api/categories', categoriesRouter);
+app.use('/api/products', productsRouter);
 
 //------------404 handler--------------------
 app.use((_req: Request, res: Response) => {
