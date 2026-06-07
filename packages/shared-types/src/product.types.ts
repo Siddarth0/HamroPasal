@@ -49,38 +49,55 @@ export interface ShippingQuote {
   reason?: string;
 }
 
-/* ---- MongoDB catalog (provisional — refined in Phase 3) ---- */
+/* ---- MongoDB catalog ---- */
 
-export interface ProductImage {
+export interface ImageRef {
   url: string;
-  publicId?: string;
-  alt?: string;
+  publicId: string;
 }
 
 export interface ProductVariant {
-  sku?: string;
   name: string;
-  attributes: Record<string, string>;
   price: number;
+  comparePrice?: number;
   stock: number;
-  imageUrl?: string;
+  sku?: string;
+  attributes: Record<string, string>;
+}
+
+/** Product-level attribute definition (e.g. { name: "Color", values: ["Red","Blue"] }). */
+export interface ProductAttribute {
+  name: string;
+  values: string[];
+}
+
+export interface ProductDimensions {
+  length: number;
+  width: number;
+  height: number;
 }
 
 export interface Product {
   id: string;
   storeId: string;
-  categoryId?: string;
+  categoryId: string;
   name: string;
   slug: string;
-  description?: string;
-  images: ProductImage[];
-  attributes?: Record<string, unknown>;
-  variants: ProductVariant[];
+  description: string;
+  images: ImageRef[];
   price: number;
+  comparePrice?: number;
   stock: number;
-  rating?: number;
-  reviewCount?: number;
+  sku?: string;
+  variants: ProductVariant[];
+  attributes: ProductAttribute[];
+  tags: string[];
   isActive: boolean;
+  avgRating: number;
+  reviewCount: number;
+  soldCount: number;
+  weight?: number;
+  dimensions?: ProductDimensions;
   createdAt: string;
   updatedAt: string;
 }
@@ -89,9 +106,11 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
-  parentId?: string | null;
   description?: string;
-  imageUrl?: string;
+  image?: ImageRef;
+  parentId?: string | null;
+  isActive: boolean;
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }
