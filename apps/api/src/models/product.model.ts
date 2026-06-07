@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { imageSchema, type ImageRef } from "./image.schema";
 
 interface ProductVariant {
   name: string;
@@ -20,7 +21,7 @@ export interface IProduct extends Document {
   name: string;
   slug: string;
   description: string;
-  images: string[];
+  images: ImageRef[];
   price: number;
   comparePrice?: number;
   stock: number;
@@ -57,7 +58,7 @@ const productSchema = new Schema<IProduct>(
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true },
     description: { type: String, required: true },
-    images: [String],
+    images: { type: [imageSchema], default: [] },
     price: { type: Number, required: true, min: 0 },
     comparePrice: Number,
     stock: { type: Number, default: 0, min: 0 },
