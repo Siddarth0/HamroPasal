@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
+import { MulterError } from "multer";
 import { ApiError } from "../utils/api-error";
 
 export const errorHandler = (
@@ -10,6 +11,16 @@ export const errorHandler = (
 ): void => {
   if (err instanceof ApiError) {
     res.status(err.statusCode).json({ success: false, message: err.message });
+    return;
+  }
+
+  // Multer upload errors (e.g. file too large, unexpected field)
+  if (err instanceof MulterError) {
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? "File too large (max 5MB)"
+        : err.message;
+    res.status(400).json({ success: false, message });
     return;
   }
 
