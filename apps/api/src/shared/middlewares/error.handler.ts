@@ -48,6 +48,21 @@ export const errorHandler = (
     return;
   }
 
+  // Mongoose: malformed ObjectId
+  if (err.name === "CastError") {
+    res.status(400).json({ success: false, message: "Invalid identifier" });
+    return;
+  }
+  // Mongo duplicate key
+  if ((err as any).code === 11000) {
+    const fields = Object.keys((err as any).keyValue ?? {});
+    res.status(409).json({
+      success: false,
+      message: fields.length ? `${fields.join(", ")} already exists` : "Duplicate value",
+    });
+    return;
+  }
+
   if (err.name === "ValidationError") {
     res.status(400).json({ success: false, message: err.message });
     return;
