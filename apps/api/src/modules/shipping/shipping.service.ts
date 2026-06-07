@@ -4,6 +4,27 @@ import type { ShippingQuote } from 'shared-types';
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
+interface ZoneOption {
+  name: string;
+  distanceKm: number;
+  shippingFee: number;
+}
+
+/**
+ * Picks the tightest active delivery zone whose radius covers `distanceKm`.
+ * Returns null when nothing covers it (out of range). Shared by shipping quotes
+ * and checkout.
+ */
+export const selectDeliveryFee = (
+  distanceKm: number,
+  zones: ZoneOption[],
+): { shippingFee: number; zoneName: string } | null => {
+  const zone = zones
+    .filter((z) => distanceKm <= z.distanceKm)
+    .sort((a, b) => a.distanceKm - b.distanceKm)[0];
+  return zone ? { shippingFee: zone.shippingFee, zoneName: zone.name } : null;
+};
+
 /**
  * Computes a per-store shipping quote for a delivery point.
  * For each ACTIVE store: distance (Haversine) → the tightest active delivery
@@ -49,12 +70,8 @@ export const getShippingQuotes = async (params: {
       { lat: store.latitude, lng: store.longitude },
     );
 
-    // Tightest zone (smallest radius) that still covers the distance.
-    const zone = store.deliveryZones
-      .filter((z) => distanceKm <= z.distanceKm)
-      .sort((a, b) => a.distanceKm - b.distanceKm)[0];
-
-    if (!zone) {
+    const fee = selectDeliveryFee(distanceKm, store.deliveryZones);
+    if (!fee) {
       return {
         storeId,
         deliverable: false,
@@ -68,8 +85,8 @@ export const getShippingQuotes = async (params: {
       storeId,
       deliverable: true,
       distanceKm: round2(distanceKm),
-      shippingFee: zone.shippingFee,
-      zoneName: zone.name,
+      shippingFee: fee.shippingFee,
+      zoneName: fee.zoneName,
     };
   });
 };
