@@ -11,6 +11,8 @@ import passport from 'passport';
 //------------Route imports-----------------
 import authRouter from '@/modules/auth/auth.route';
 import usersRouter from '@/modules/users/users.route';
+import storesRouter from '@/modules/stores/stores.route';
+import shippingRouter from '@/modules/shipping/shipping.route';
 import { errorHandler } from '@/shared/middlewares/error.handler';
 
 const app: Application = express();
@@ -56,6 +58,8 @@ app.get('/health', (_req: Request, res: Response) => {
 //------------API routes---------------------
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/stores', storesRouter);
+app.use('/api/shipping', shippingRouter);
 
 //------------404 handler--------------------
 app.use((_req: Request, res: Response) => {
