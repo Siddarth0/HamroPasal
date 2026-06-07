@@ -1,36 +1,35 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-interface CartItem {
+export interface IReview extends Document {
   productId: mongoose.Types.ObjectId;
-  variantId?: string;
-  name: string;
-  imageUrl?: string;
-  price: number;
-  quantity: number;
-  storeId: string;
+  userId: string; // Postgres user id
+  storeId: string; // denormalized for store-level rating queries
+  orderId?: string; // sub-order the purchase came from (verified purchase)
+  rating: number; // 1-5
+  title?: string;
+  comment: string;
+  images: string[];
+  isVerifiedPurchase: boolean;
+  isApproved: boolean;
 }
 
-export interface ICart extends Document {
-  userId: string;
-  items: CartItem[];
-}
-
-const cartItemSchema = new Schema<CartItem>({
-  productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
-  variantId: String,
-  name: { type: String, required: true },
-  imageUrl: String,
-  price: { type: Number, required: true },
-  quantity: { type: Number, required: true, min: 1 },
-  storeId: { type: String, required: true },
-});
-
-const cartSchema = new Schema<ICart>(
+const reviewSchema = new Schema<IReview>(
   {
-    userId: { type: String, required: true, unique: true, index: true },
-    items: [cartItemSchema],
+    productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+    userId: { type: String, required: true, index: true },
+    storeId: { type: String, required: true, index: true },
+    orderId: { type: String },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    title: String,
+    comment: { type: String, required: true },
+    images: [String],
+    isVerifiedPurchase: { type: Boolean, default: false },
+    isApproved: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-export const Cart = mongoose.model<ICart>("Cart", cartSchema);
+// One review per user per product.
+reviewSchema.index({ productId: 1, userId: 1 }, { unique: true });
+
+export const Review = mongoose.model<IReview>("Review", reviewSchema);

@@ -23,7 +23,7 @@ const categorySchema = new Schema<ICategory>(
   { timestamps: true }
 );
 
-categorySchema.index({ slug: 1 });
+// slug already has a unique index via the field definition.
 categorySchema.index({ parentId: 1 });
 
 export const Category = mongoose.model<ICategory>("Category", categorySchema);
