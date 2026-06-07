@@ -39,6 +39,16 @@ export interface DeliveryZone {
   createdAt: string;
 }
 
+/** Per-store shipping estimate returned by POST /api/shipping/quote. */
+export interface ShippingQuote {
+  storeId: string;
+  deliverable: boolean;
+  distanceKm: number | null;
+  shippingFee: number | null;
+  zoneName?: string;
+  reason?: string;
+}
+
 /* ---- MongoDB catalog (provisional — refined in Phase 3) ---- */
 
 export interface ProductImage {
