@@ -65,11 +65,25 @@ app.get('/health', (_req: Request, res: Response) => {
 
 //------------API docs------------------------
 // Raw spec, Swagger UI (/docs), and Scalar reference (/reference).
+// Scalar pulls its bundle from jsDelivr + injects an inline config script, so it
+// needs a relaxed CSP (the global helmet default blocks both → blank page).
+const docsCsp = helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
+    styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://fonts.googleapis.com'],
+    fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+    imgSrc: ["'self'", 'data:', 'https:'],
+    connectSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+    workerSrc: ["'self'", 'blob:'],
+  },
+});
+
 app.get('/openapi.json', (_req: Request, res: Response) => {
   res.json(openapiDocument);
 });
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiDocument));
-app.use('/reference', apiReference({ content: openapiDocument }));
+app.use('/reference', docsCsp, apiReference({ content: openapiDocument }));
 
 //------------API routes---------------------
 app.use('/api/auth', authRouter);
