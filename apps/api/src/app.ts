@@ -15,6 +15,8 @@ import storesRouter from '@/modules/stores/stores.route';
 import shippingRouter from '@/modules/shipping/shipping.route';
 import categoriesRouter from '@/modules/categories/categories.route';
 import productsRouter from '@/modules/products/products.route';
+import cartRouter from '@/modules/cart/cart.route';
+import wishlistRouter from '@/modules/wishlist/wishlist.route';
 import { errorHandler } from '@/shared/middlewares/error.handler';
 
 const app: Application = express();
@@ -64,6 +66,8 @@ app.use('/api/stores', storesRouter);
 app.use('/api/shipping', shippingRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/products', productsRouter);
+app.use('/api/cart', cartRouter);
+app.use('/api/wishlist', wishlistRouter);
 
 //------------404 handler--------------------
 app.use((_req: Request, res: Response) => {
