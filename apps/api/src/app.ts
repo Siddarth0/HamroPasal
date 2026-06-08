@@ -21,6 +21,7 @@ import productsRouter from '@/modules/products/products.route';
 import cartRouter from '@/modules/cart/cart.route';
 import wishlistRouter from '@/modules/wishlist/wishlist.route';
 import ordersRouter from '@/modules/orders/orders.route';
+import paymentsRouter from '@/modules/payments/payments.route';
 import { errorHandler } from '@/shared/middlewares/error.handler';
 
 const app: Application = express();
@@ -50,6 +51,9 @@ app.use('/api', limiter);
 //-------------General middleware-------------
 app.use(compression());
 app.use(cookieParser());
+// Stripe webhook needs the raw body for signature verification — must run
+// before the JSON parser (which would otherwise consume/transform the body).
+app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(passport.initialize());
@@ -95,6 +99,7 @@ app.use('/api/products', productsRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/wishlist', wishlistRouter);
 app.use('/api/orders', ordersRouter);
+app.use('/api/payments', paymentsRouter);
 
 //------------404 handler--------------------
 app.use((_req: Request, res: Response) => {

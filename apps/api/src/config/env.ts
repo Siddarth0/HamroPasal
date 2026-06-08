@@ -13,6 +13,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PORT: z.coerce.number().default(4000),
 
+  SERVER_URL: z.string().default("http://localhost:4000"),
   CLIENT_URL: z.string().default("http://localhost:3000"),
   SELLER_URL: z.string().default("http://localhost:3001"),
   ADMIN_URL: z.string().default("http://localhost:3002"),
@@ -41,12 +42,15 @@ const envSchema = z.object({
   KHALTI_BASE_URL: z.string().default("https://dev.khalti.com/api/v2"),
 
   ESEWA_MERCHANT_CODE: optional,
+  // eSewa test/sandbox HMAC secret by default; override in production.
+  ESEWA_SECRET_KEY: z.string().default("8gBm/:&EnhH.1/q"),
   ESEWA_SUCCESS_URL: optional,
   ESEWA_FAILURE_URL: optional,
   ESEWA_BASE_URL: z.string().default("https://rc-epay.esewa.com.np"),
 
   STRIPE_SECRET_KEY: optional,
   STRIPE_WEBHOOK_SECRET: optional,
+  STRIPE_CURRENCY: z.string().default("usd"),
 
   RESEND_API_KEY: optional,
   SMTP_HOST: z.string().default("smtp.gmail.com"),
