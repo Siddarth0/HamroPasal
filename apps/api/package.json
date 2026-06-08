@@ -21,6 +21,7 @@
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@scalar/express-api-reference": "^0.9.20",
+    "bullmq": "^5.78.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",
     "compression": "^1.8.1",
@@ -43,6 +44,7 @@
     "socket.io": "^4.8.3",
     "stripe": "^22.2.0",
     "swagger-ui-express": "^5.0.1",
+    "web-push": "^3.6.7",
     "zod": "^4.4.3"
   },
   "devDependencies": {
