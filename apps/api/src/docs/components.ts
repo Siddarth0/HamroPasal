@@ -194,6 +194,52 @@ export const schemas = {
       createdAt: { type: 'string', format: 'date-time' },
     },
   },
+  ChatMessage: {
+    type: 'object',
+    properties: {
+      _id: { type: 'string' },
+      conversationId: { type: 'string' },
+      senderId: { type: 'string' },
+      senderRole: { type: 'string', enum: ['CUSTOMER', 'SELLER'] },
+      text: { type: 'string' },
+      product: {
+        type: 'object',
+        nullable: true,
+        properties: {
+          productId: { type: 'string' },
+          name: { type: 'string' },
+          slug: { type: 'string' },
+          image: { type: 'string' },
+          price: { type: 'number' },
+        },
+      },
+      isRead: { type: 'boolean' },
+      createdAt: { type: 'string', format: 'date-time' },
+    },
+  },
+  ConversationSummary: {
+    type: 'object',
+    properties: {
+      _id: { type: 'string' },
+      storeId: { type: 'string' },
+      lastMessage: { type: 'object', nullable: true },
+      unread: { type: 'integer' },
+      counterpart: { type: 'object' },
+      updatedAt: { type: 'string', format: 'date-time' },
+    },
+  },
+  AppNotification: {
+    type: 'object',
+    properties: {
+      _id: { type: 'string' },
+      type: { type: 'string' },
+      title: { type: 'string' },
+      body: { type: 'string' },
+      data: { type: 'object', additionalProperties: { type: 'string' } },
+      isRead: { type: 'boolean' },
+      createdAt: { type: 'string', format: 'date-time' },
+    },
+  },
   PlatformStats: {
     type: 'object',
     properties: {
