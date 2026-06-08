@@ -52,6 +52,10 @@ const envSchema = z.object({
   STRIPE_WEBHOOK_SECRET: optional,
   STRIPE_CURRENCY: z.string().default("usd"),
 
+  VAPID_PUBLIC_KEY: optional,
+  VAPID_PRIVATE_KEY: optional,
+  VAPID_SUBJECT: z.string().default("mailto:admin@ecommerce.com"),
+
   RESEND_API_KEY: optional,
   SMTP_HOST: z.string().default("smtp.gmail.com"),
   SMTP_PORT: z.coerce.number().default(587),
