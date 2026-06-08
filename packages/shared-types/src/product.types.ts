@@ -114,3 +114,19 @@ export interface Category {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Review {
+  id: string;
+  productId: string;
+  userId: string;
+  storeId: string;
+  subOrderId?: string;
+  rating: number;
+  title?: string;
+  comment: string;
+  images: ImageRef[];
+  isVerifiedPurchase: boolean;
+  isApproved: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

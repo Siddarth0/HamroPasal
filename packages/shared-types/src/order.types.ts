@@ -78,3 +78,15 @@ export interface Payment {
   paidAt: string | null;
   createdAt: string;
 }
+
+export interface Return {
+  id: string;
+  subOrderId: string;
+  reason: string;
+  description: string | null;
+  status: ReturnStatus;
+  refundAmount: number | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
