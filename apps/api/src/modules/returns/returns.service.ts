@@ -122,6 +122,12 @@ export const resolveReturn = async (
       data: { status: 'REFUNDED' },
     });
 
+    // Void any pending payout for this sub-order — it's no longer payable.
+    await prisma.payout.updateMany({
+      where: { subOrderId: ret.subOrder.id, status: { in: ['PENDING', 'PROCESSING'] } },
+      data: { status: 'FAILED' },
+    });
+
     // If every sub-order on the order is now refunded, reflect it on the order.
     const subs = await prisma.subOrder.findMany({
       where: { orderId: ret.subOrder.orderId },
