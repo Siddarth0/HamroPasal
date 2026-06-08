@@ -1,3 +1,16 @@
+export const orderConfirmationTemplate = (
+  name: string,
+  orderId: string,
+  total: number,
+): string => `
+  <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1a1a1a;">
+    <h2 style="margin: 0 0 16px;">Thanks for your order, ${name}!</h2>
+    <p style="margin: 0 0 8px; line-height: 1.5;">Your order <strong>#${orderId.slice(0, 8)}</strong> has been placed.</p>
+    <p style="margin: 0 0 16px; line-height: 1.5;">Total: <strong>NPR ${total.toFixed(2)}</strong></p>
+    <p style="margin: 0; font-size: 13px; color: #999;">We'll notify you as your order is processed and shipped.</p>
+  </div>
+`;
+
 export const otpEmailTemplate = (
   otp: string,
   ttlMinutes: number,

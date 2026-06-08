@@ -1,5 +1,6 @@
 import { prisma } from '@/config/db.postgres';
 import { ApiError } from '@/shared/utils/api-error';
+import { createNotification } from '@/modules/notifications/notifications.service';
 import { khaltiInitiate, khaltiLookup } from './khalti.service';
 import { esewaBuildForm, esewaDecodeAndVerify } from './esewa.service';
 import { stripeCreateIntent, stripeConstructEvent } from './stripe.service';
@@ -25,6 +26,16 @@ const markOrderPaid = async (orderId: string, gatewayRef: string, gatewayRespons
       data: { status: 'CONFIRMED' },
     }),
   ]);
+
+  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true } });
+  if (order) {
+    await createNotification(order.userId, {
+      type: 'PAYMENT_RECEIVED',
+      title: 'Payment received',
+      body: 'We have received your payment.',
+      data: { orderId },
+    }).catch(() => undefined);
+  }
 };
 
 const markPaymentFailed = async (orderId: string, gatewayResponse: any) => {

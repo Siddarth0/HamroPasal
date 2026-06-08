@@ -4,6 +4,9 @@ import { Product } from '@/models/product.model';
 import { ApiError } from '@/shared/utils/api-error';
 import { haversineKm } from '@/shared/utils/distance';
 import { selectDeliveryFee } from '@/modules/shipping/shipping.service';
+import { createNotification } from '@/modules/notifications/notifications.service';
+import { enqueueEmail } from '@/config/queue';
+import { orderConfirmationTemplate } from '@/modules/notifications/email.templates';
 import { buildPaginationMeta, type Pagination } from '@/shared/utils/pagination';
 import type { OrderStatus, PaymentMethod } from '@/generated/prisma';
 
@@ -140,6 +143,7 @@ export const checkout = async (
     select: {
       id: true,
       name: true,
+      ownerId: true,
       status: true,
       commissionRate: true,
       latitude: true,
@@ -234,6 +238,44 @@ export const checkout = async (
   await Promise.all(
     lines.map((l) => Product.updateOne({ _id: l.productId }, { $inc: { soldCount: l.quantity } })),
   ).catch(() => undefined);
+
+  // 5. Notify buyer + each seller, queue confirmation email (order already committed).
+  try {
+    await createNotification(userId, {
+      type: 'ORDER_PLACED',
+      title: 'Order placed',
+      body: 'Your order has been placed successfully.',
+      data: { orderId: order.id },
+    });
+
+    const notifiedSellers = new Set<string>();
+    for (const g of groups) {
+      const ownerId = storeMap.get(g.storeId)?.ownerId;
+      if (ownerId && !notifiedSellers.has(ownerId)) {
+        notifiedSellers.add(ownerId);
+        await createNotification(ownerId, {
+          type: 'NEW_ORDER',
+          title: 'New order received',
+          body: 'You have a new order to fulfill.',
+          data: { orderId: order.id },
+        });
+      }
+    }
+
+    const buyer = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true },
+    });
+    if (buyer) {
+      await enqueueEmail({
+        to: buyer.email,
+        subject: 'Your order is confirmed',
+        html: orderConfirmationTemplate(buyer.name, order.id, order.totalAmount),
+      });
+    }
+  } catch (err) {
+    console.error('post-checkout side effects failed:', err);
+  }
 
   return order;
 };
@@ -370,7 +412,7 @@ export const updateSubOrderStatus = async (
 ) => {
   const sub = await prisma.subOrder.findFirst({
     where: { id: subOrderId, storeId },
-    include: { orderItems: true },
+    include: { orderItems: true, order: { select: { userId: true } } },
   });
   if (!sub) throw new ApiError('Sub-order not found', 404);
 
@@ -379,6 +421,14 @@ export const updateSubOrderStatus = async (
   }
 
   await prisma.subOrder.update({ where: { id: subOrderId }, data: { status } });
+
+  // Notify the buyer of the fulfillment update (best-effort).
+  await createNotification(sub.order.userId, {
+    type: 'ORDER_STATUS',
+    title: 'Order update',
+    body: `An item in your order is now ${status.toLowerCase()}.`,
+    data: { subOrderId, status },
+  }).catch(() => undefined);
 
   // Cancelling a sub-order returns its items to stock.
   if (status === 'CANCELLED') {
