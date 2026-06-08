@@ -90,3 +90,21 @@ export interface Return {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Payout {
+  id: string;
+  storeId: string;
+  subOrderId: string;
+  amount: number;
+  status: PayoutStatus;
+  method: string | null;
+  reference: string | null;
+  processedAt: string | null;
+  createdAt: string;
+}
+
+/** Seller earnings overview. */
+export interface SellerEarnings {
+  delivered: { count: number; earnings: number };
+  payouts: { pending: number; processing: number; completed: number; failed: number };
+}
