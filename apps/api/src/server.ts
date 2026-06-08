@@ -8,6 +8,9 @@ import app from './app';
 import { connectMongo, disconnectMongo } from './config/db.mongo';
 import { prisma } from './config/db.postgres';
 import { disconnectRedis } from './config/redis';
+import { initSocket, closeSocket } from './config/socket';
+import { registerChatSocket } from './modules/chat/chat.socket';
+import { emailWorker } from './jobs/email.worker';
 
 const PORT = process.env.PORT ?? 4000;
 
@@ -17,6 +20,10 @@ async function bootstrap(): Promise<void> {
   console.log('✅ PostgreSQL connected');
 
   const httpServer = http.createServer(app);
+
+  // Real-time: Socket.io + chat handlers.
+  const io = initSocket(httpServer);
+  registerChatSocket(io);
 
   httpServer.listen(PORT, () => {
     console.log(`🚀 API running on http://localhost:${PORT}`);
@@ -28,6 +35,8 @@ async function bootstrap(): Promise<void> {
     console.log(`\n⚠️  ${signal} — shutting down...`);
     httpServer.close(async () => {
       await Promise.allSettled([
+        closeSocket(),
+        emailWorker.close(),
         prisma.$disconnect(),
         disconnectMongo(),
         disconnectRedis(),

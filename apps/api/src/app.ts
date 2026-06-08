@@ -27,6 +27,8 @@ import returnsRouter from '@/modules/returns/returns.route';
 import payoutsRouter from '@/modules/payouts/payouts.route';
 import adminRouter from '@/modules/admin/admin.route';
 import analyticsRouter from '@/modules/analytics/analytics.route';
+import chatRouter from '@/modules/chat/chat.route';
+import notificationsRouter from '@/modules/notifications/notifications.route';
 import { errorHandler } from '@/shared/middlewares/error.handler';
 
 const app: Application = express();
@@ -110,6 +112,8 @@ app.use('/api/returns', returnsRouter);
 app.use('/api/payouts', payoutsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/analytics', analyticsRouter);
+app.use('/api/chat', chatRouter);
+app.use('/api/notifications', notificationsRouter);
 
 //------------404 handler--------------------
 app.use((_req: Request, res: Response) => {
