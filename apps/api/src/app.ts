@@ -24,6 +24,9 @@ import ordersRouter from '@/modules/orders/orders.route';
 import paymentsRouter from '@/modules/payments/payments.route';
 import reviewsRouter from '@/modules/reviews/reviews.route';
 import returnsRouter from '@/modules/returns/returns.route';
+import payoutsRouter from '@/modules/payouts/payouts.route';
+import adminRouter from '@/modules/admin/admin.route';
+import analyticsRouter from '@/modules/analytics/analytics.route';
 import { errorHandler } from '@/shared/middlewares/error.handler';
 
 const app: Application = express();
@@ -104,6 +107,9 @@ app.use('/api/orders', ordersRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/returns', returnsRouter);
+app.use('/api/payouts', payoutsRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/analytics', analyticsRouter);
 
 //------------404 handler--------------------
 app.use((_req: Request, res: Response) => {
