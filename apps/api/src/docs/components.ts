@@ -166,6 +166,34 @@ export const schemas = {
     },
   },
 
+  Review: {
+    type: 'object',
+    properties: {
+      _id: { type: 'string' },
+      productId: { type: 'string' },
+      userId: { type: 'string' },
+      storeId: { type: 'string' },
+      rating: { type: 'integer', minimum: 1, maximum: 5 },
+      title: { type: 'string' },
+      comment: { type: 'string' },
+      images: { type: 'array', items: { $ref: '#/components/schemas/ImageRef' } },
+      isVerifiedPurchase: { type: 'boolean' },
+      createdAt: { type: 'string', format: 'date-time' },
+    },
+  },
+  Return: {
+    type: 'object',
+    properties: {
+      id: { type: 'string' },
+      subOrderId: { type: 'string' },
+      reason: { type: 'string' },
+      description: { type: 'string', nullable: true },
+      status: { type: 'string', enum: ['REQUESTED', 'APPROVED', 'REJECTED', 'COMPLETED'] },
+      refundAmount: { type: 'number', nullable: true },
+      resolvedAt: { type: 'string', format: 'date-time', nullable: true },
+      createdAt: { type: 'string', format: 'date-time' },
+    },
+  },
   CartLineItem: {
     type: 'object',
     properties: {

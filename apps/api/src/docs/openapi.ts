@@ -10,6 +10,8 @@ import { cartPaths } from './paths/cart.paths';
 import { wishlistPaths } from './paths/wishlist.paths';
 import { ordersPaths } from './paths/orders.paths';
 import { paymentsPaths } from './paths/payments.paths';
+import { reviewsPaths } from './paths/reviews.paths';
+import { returnsPaths } from './paths/returns.paths';
 
 // The OpenAPI 3.1 document — single source for /docs (Swagger UI) and /reference
 // (Scalar). To document a NEW endpoint, add it to the matching file in
@@ -43,6 +45,8 @@ export const openapiDocument = {
     { name: 'Wishlist' },
     { name: 'Orders' },
     { name: 'Payments' },
+    { name: 'Reviews' },
+    { name: 'Returns' },
   ],
   paths: {
     ...authPaths,
@@ -55,6 +59,8 @@ export const openapiDocument = {
     ...wishlistPaths,
     ...ordersPaths,
     ...paymentsPaths,
+    ...reviewsPaths,
+    ...returnsPaths,
   },
   components: {
     securitySchemes,
