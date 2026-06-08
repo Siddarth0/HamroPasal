@@ -194,6 +194,74 @@ export const schemas = {
       createdAt: { type: 'string', format: 'date-time' },
     },
   },
+  PlatformStats: {
+    type: 'object',
+    properties: {
+      users: { type: 'object', additionalProperties: { type: 'integer' } },
+      stores: { type: 'object', additionalProperties: { type: 'integer' } },
+      orders: { type: 'object', additionalProperties: { type: 'integer' } },
+      revenue: { type: 'number' },
+      commissionEarned: { type: 'number' },
+      pendingPayouts: { type: 'number' },
+      topProducts: { type: 'array', items: { type: 'object' } },
+    },
+  },
+  SellerStats: {
+    type: 'object',
+    properties: {
+      subOrders: { type: 'object', additionalProperties: { type: 'integer' } },
+      deliveredRevenue: { type: 'number' },
+      deliveredEarnings: { type: 'number' },
+      productCount: { type: 'integer' },
+      topProducts: { type: 'array', items: { type: 'object' } },
+    },
+  },
+  AdminUser: {
+    type: 'object',
+    properties: {
+      id: { type: 'string' },
+      email: { type: 'string', format: 'email' },
+      name: { type: 'string' },
+      phone: { type: 'string', nullable: true },
+      role: { type: 'string', enum: ['CUSTOMER', 'SELLER', 'ADMIN'] },
+      isActive: { type: 'boolean' },
+      isEmailVerified: { type: 'boolean' },
+      store: { type: 'object', nullable: true },
+      createdAt: { type: 'string', format: 'date-time' },
+    },
+  },
+  Payout: {
+    type: 'object',
+    properties: {
+      id: { type: 'string' },
+      storeId: { type: 'string' },
+      subOrderId: { type: 'string' },
+      amount: { type: 'number' },
+      status: { type: 'string', enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'] },
+      method: { type: 'string', nullable: true },
+      reference: { type: 'string', nullable: true },
+      processedAt: { type: 'string', format: 'date-time', nullable: true },
+      createdAt: { type: 'string', format: 'date-time' },
+    },
+  },
+  SellerEarnings: {
+    type: 'object',
+    properties: {
+      delivered: {
+        type: 'object',
+        properties: { count: { type: 'integer' }, earnings: { type: 'number' } },
+      },
+      payouts: {
+        type: 'object',
+        properties: {
+          pending: { type: 'number' },
+          processing: { type: 'number' },
+          completed: { type: 'number' },
+          failed: { type: 'number' },
+        },
+      },
+    },
+  },
   CartLineItem: {
     type: 'object',
     properties: {
