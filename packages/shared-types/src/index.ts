@@ -4,3 +4,5 @@ export * from './product.types';
 export * from './cart.types';
 export * from './order.types';
 export * from './analytics.types';
+export * from './chat.types';
+export * from './notification.types';
