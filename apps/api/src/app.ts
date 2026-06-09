@@ -29,6 +29,8 @@ import adminRouter from '@/modules/admin/admin.route';
 import analyticsRouter from '@/modules/analytics/analytics.route';
 import chatRouter from '@/modules/chat/chat.route';
 import notificationsRouter from '@/modules/notifications/notifications.route';
+import couponsRouter from '@/modules/coupons/coupons.route';
+import loyaltyRouter from '@/modules/loyalty/loyalty.route';
 import { errorHandler } from '@/shared/middlewares/error.handler';
 
 const app: Application = express();
@@ -114,6 +116,8 @@ app.use('/api/admin', adminRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/coupons', couponsRouter);
+app.use('/api/loyalty', loyaltyRouter);
 
 //------------404 handler--------------------
 app.use((_req: Request, res: Response) => {
