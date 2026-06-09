@@ -8,6 +8,7 @@ import { Logo } from './logo';
 import { Button } from '@/components/ui/button';
 import { useCartCount } from '@/features/cart/hooks';
 import { useWishlistCount } from '@/features/wishlist/hooks';
+import { useUnreadCount } from '@/features/notifications/hooks';
 
 function SearchBar() {
   const router = useRouter();
@@ -38,6 +39,7 @@ function SearchBar() {
 export function SiteHeader() {
   const cartCount = useCartCount();
   const wishlistCount = useWishlistCount();
+  const unreadCount = useUnreadCount();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
@@ -76,9 +78,16 @@ export function SiteHeader() {
               </span>
             )}
           </Link>
-          <Button variant="ghost" size="icon" aria-label="Notifications">
-            <Bell className="h-5 w-5" />
-          </Button>
+          <Link href="/notifications" className="relative" aria-label="Notifications">
+            <Button variant="ghost" size="icon">
+              <Bell className="h-5 w-5" />
+            </Button>
+            {unreadCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </Link>
         </div>
       </div>
 

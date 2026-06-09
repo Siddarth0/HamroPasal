@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { Star, Minus, Plus, ShoppingCart, Store, Check } from 'lucide-react';
+import { Star, Minus, Plus, ShoppingCart, Store, Check, MessageCircle } from 'lucide-react';
 import { useProduct } from '@/features/catalog/hooks';
 import type { ApiVariant } from '@/features/catalog/api';
 import { addToCart } from '@/features/cart/api';
@@ -221,6 +221,14 @@ export function ProductDetail({ slug }: { slug: string }) {
               )}
             </Button>
           </div>
+
+          <Button asChild variant="outline" className="mt-3 gap-2">
+            <Link
+              href={`/messages?storeId=${product.storeId}&productId=${product._id}&pname=${encodeURIComponent(product.name)}&pimg=${encodeURIComponent(images[0] ?? '')}`}
+            >
+              <MessageCircle className="h-4 w-4" /> Chat with seller
+            </Link>
+          </Button>
 
           {addState === 'error' && addMsg && <p className="mt-2 text-sm text-brand">{addMsg}</p>}
           {status !== 'authenticated' && (
