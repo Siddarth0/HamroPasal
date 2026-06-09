@@ -57,3 +57,11 @@ export async function sendChatMessage(input: {
 export async function markConversationRead(conversationId: string): Promise<void> {
   await api.post(`/chat/conversations/${conversationId}/read`);
 }
+
+/** A pending conversation seeded from a product page (before the first message). */
+export interface ChatDraft {
+  storeId: string;
+  productId?: string;
+  pname?: string;
+  pimg?: string;
+}

@@ -9,28 +9,25 @@ import {
   fetchMessages,
   sendChatMessage,
   markConversationRead,
+  type ChatDraft,
 } from '@/features/chat/api';
 import { useAuthStore } from '@/store/auth';
 import { Button } from '@/components/ui/button';
 import { cn, formatPrice } from '@/lib/utils';
 import { getApiErrorMessage } from '@/lib/api';
 
-export interface ChatDraft {
-  storeId: string;
-  productId?: string;
-  pname?: string;
-  pimg?: string;
-}
-
+/**
+ * Pure messages + composer, sized to fill its parent (h-full). The parent
+ * provides the surrounding card/header — used by both the /messages page and
+ * the floating chat widget.
+ */
 export function ChatThread({
   conversationId,
   draft,
-  title,
   onCreated,
 }: {
   conversationId?: string;
   draft?: ChatDraft | null;
-  title?: string;
   onCreated: (id: string) => void;
 }) {
   const qc = useQueryClient();
@@ -49,7 +46,6 @@ export function ChatThread({
   const messages = [...(data?.items ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const count = messages.length;
 
-  // Mark read on open / when new messages land.
   useEffect(() => {
     if (!conversationId) return;
     markConversationRead(conversationId)
@@ -91,10 +87,8 @@ export function ChatThread({
   const showProductChip = !conversationId && !!draft?.pname;
 
   return (
-    <div className="flex h-[70vh] flex-col rounded-2xl border border-border bg-card">
-      <div className="border-b border-border px-4 py-3 text-sm font-semibold">{title ?? 'Chat'}</div>
-
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+    <div className="flex h-full flex-col">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         {count === 0 && !showProductChip && (
           <p className="pt-10 text-center text-sm text-muted-foreground">Start the conversation…</p>
         )}
@@ -104,7 +98,7 @@ export function ChatThread({
             <div key={m._id} className={cn('flex', own ? 'justify-end' : 'justify-start')}>
               <div
                 className={cn(
-                  'max-w-[78%] rounded-2xl px-3 py-2 text-sm',
+                  'max-w-[80%] rounded-2xl px-3 py-2 text-sm',
                   own ? 'bg-brand text-brand-foreground' : 'bg-muted',
                 )}
               >
@@ -134,9 +128,9 @@ export function ChatThread({
       </div>
 
       {showProductChip && (
-        <div className="mx-4 mb-2 flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-2 text-xs">
+        <div className="mx-3 mb-2 flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-2 text-xs">
           {draft?.pimg && (
-            <span className="relative h-8 w-8 overflow-hidden rounded">
+            <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded">
               <Image src={draft.pimg} alt="" fill className="object-cover" />
             </span>
           )}

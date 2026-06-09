@@ -10,6 +10,7 @@ import { useProduct } from '@/features/catalog/hooks';
 import type { ApiVariant } from '@/features/catalog/api';
 import { addToCart } from '@/features/cart/api';
 import { useAuthStore } from '@/store/auth';
+import { useChatUI } from '@/store/chat-ui';
 import { Button } from '@/components/ui/button';
 import { ProductTabs } from './product-tabs';
 import { cn, formatPrice } from '@/lib/utils';
@@ -22,6 +23,7 @@ export function ProductDetail({ slug }: { slug: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const status = useAuthStore((s) => s.status);
+  const openChat = useChatUI((s) => s.openDraft);
   const { data: product, isLoading, isError } = useProduct(slug);
 
   const [activeImage, setActiveImage] = useState(0);
@@ -222,12 +224,23 @@ export function ProductDetail({ slug }: { slug: string }) {
             </Button>
           </div>
 
-          <Button asChild variant="outline" className="mt-3 gap-2">
-            <Link
-              href={`/messages?storeId=${product.storeId}&productId=${product._id}&pname=${encodeURIComponent(product.name)}&pimg=${encodeURIComponent(images[0] ?? '')}`}
-            >
-              <MessageCircle className="h-4 w-4" /> Chat with seller
-            </Link>
+          <Button
+            variant="outline"
+            className="mt-3 gap-2"
+            onClick={() => {
+              if (status !== 'authenticated') {
+                router.push(`/login?returnUrl=${encodeURIComponent(`/product/${slug}`)}`);
+                return;
+              }
+              openChat({
+                storeId: product.storeId,
+                productId: product._id,
+                pname: product.name,
+                pimg: images[0],
+              });
+            }}
+          >
+            <MessageCircle className="h-4 w-4" /> Chat with seller
           </Button>
 
           {addState === 'error' && addMsg && <p className="mt-2 text-sm text-brand">{addMsg}</p>}
