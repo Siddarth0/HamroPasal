@@ -2,11 +2,25 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { tabs, recommended } from '@/lib/mock';
+import { tabs, recommended, mockToCard } from '@/lib/mock';
 import { ProductCard } from './product-card';
+import { useProducts } from '@/features/catalog/hooks';
+import { productToCard, type ProductQuery } from '@/features/catalog/api';
+
+// Each tab maps to a sort; "Best Seller" lands first.
+const tabSort: NonNullable<ProductQuery['sort']>[] = [
+  'popular',
+  'newest',
+  'price_asc',
+  'rating',
+  'popular',
+];
 
 export function TodaysForYou() {
   const [active, setActive] = useState(0);
+  const { data } = useProducts({ sort: tabSort[active] ?? 'newest', limit: 8 });
+  const live = data?.items ?? [];
+  const products = live.length ? live.map(productToCard) : recommended.map(mockToCard);
 
   return (
     <section className="container mt-10">
@@ -31,7 +45,7 @@ export function TodaysForYou() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {recommended.map((p) => (
+        {products.map((p) => (
           <ProductCard key={p.id} product={p} mode="rating" />
         ))}
       </div>

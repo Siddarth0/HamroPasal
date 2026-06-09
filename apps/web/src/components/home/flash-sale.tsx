@@ -1,10 +1,18 @@
+'use client';
+
 import { Zap, ArrowLeft, ArrowRight } from 'lucide-react';
-import { flashSale } from '@/lib/mock';
+import { flashSale, mockToCard } from '@/lib/mock';
 import { ProductCard } from './product-card';
+import { useProducts } from '@/features/catalog/hooks';
+import { productToCard } from '@/features/catalog/api';
 
 const timer = ['08', '17', '56'];
 
 export function FlashSale() {
+  const { data } = useProducts({ sort: 'popular', limit: 5 });
+  const live = data?.items ?? [];
+  const products = live.length ? live.map(productToCard) : flashSale.map(mockToCard);
+
   return (
     <section className="container mt-8">
       <div className="rounded-2xl bg-background p-5 md:p-6">
@@ -36,7 +44,7 @@ export function FlashSale() {
         </div>
 
         <div className="no-scrollbar grid auto-cols-[minmax(190px,1fr)] grid-flow-col gap-4 overflow-x-auto md:grid-flow-row md:auto-cols-auto md:grid-cols-5">
-          {flashSale.map((p) => (
+          {products.map((p) => (
             <ProductCard key={p.id} product={p} mode="flash" />
           ))}
         </div>

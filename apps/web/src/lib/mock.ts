@@ -1,5 +1,7 @@
-// Placeholder data for the homepage until the catalog API is wired in.
-// Grayscale imagery matches the reference's monochrome product photography.
+// Placeholder data used as a graceful fallback when the catalog API returns
+// nothing yet (e.g. before products are seeded). Grayscale imagery keeps the
+// monochrome catalog look.
+import type { CardProduct } from '@/components/home/product-card';
 
 export const img = (seed: string | number, size = 400) =>
   `https://picsum.photos/seed/bb-${seed}/${size}/${size}?grayscale`;
@@ -14,6 +16,19 @@ export interface MockProduct {
   seed: string;
   soldPercent?: number; // for flash-sale progress bar
 }
+
+/** Map a mock product into the card's normalized shape. */
+export const mockToCard = (m: MockProduct): CardProduct => ({
+  id: m.id,
+  name: m.name,
+  price: m.price,
+  comparePrice: m.comparePrice,
+  rating: m.rating,
+  sold: m.sold,
+  image: img(m.seed),
+  href: `/product/${m.id}`,
+  soldPercent: m.soldPercent,
+});
 
 export const categories = [
   { name: 'T-Shirt', seed: 'tshirt' },
