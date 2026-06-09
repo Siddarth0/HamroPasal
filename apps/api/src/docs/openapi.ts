@@ -17,6 +17,8 @@ import { adminPaths } from './paths/admin.paths';
 import { analyticsPaths } from './paths/analytics.paths';
 import { chatPaths } from './paths/chat.paths';
 import { notificationsPaths } from './paths/notifications.paths';
+import { couponsPaths } from './paths/coupons.paths';
+import { loyaltyPaths } from './paths/loyalty.paths';
 
 // The OpenAPI 3.1 document — single source for /docs (Swagger UI) and /reference
 // (Scalar). To document a NEW endpoint, add it to the matching file in
@@ -57,6 +59,8 @@ export const openapiDocument = {
     { name: 'Analytics' },
     { name: 'Chat' },
     { name: 'Notifications' },
+    { name: 'Coupons' },
+    { name: 'Loyalty' },
   ],
   paths: {
     ...authPaths,
@@ -76,6 +80,8 @@ export const openapiDocument = {
     ...analyticsPaths,
     ...chatPaths,
     ...notificationsPaths,
+    ...couponsPaths,
+    ...loyaltyPaths,
   },
   components: {
     securitySchemes,

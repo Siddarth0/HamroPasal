@@ -262,6 +262,35 @@ export const schemas = {
       topProducts: { type: 'array', items: { type: 'object' } },
     },
   },
+  Coupon: {
+    type: 'object',
+    properties: {
+      id: { type: 'string' },
+      code: { type: 'string' },
+      description: { type: 'string', nullable: true },
+      discountType: { type: 'string', enum: ['PERCENTAGE', 'FLAT'] },
+      discountValue: { type: 'number' },
+      minOrderAmount: { type: 'number' },
+      maxDiscount: { type: 'number', nullable: true },
+      usageLimit: { type: 'integer', nullable: true },
+      usedCount: { type: 'integer' },
+      isActive: { type: 'boolean' },
+      startsAt: { type: 'string', format: 'date-time' },
+      expiresAt: { type: 'string', format: 'date-time', nullable: true },
+      storeId: { type: 'string', nullable: true },
+    },
+  },
+  LoyaltyTransaction: {
+    type: 'object',
+    properties: {
+      id: { type: 'string' },
+      points: { type: 'integer' },
+      type: { type: 'string', enum: ['EARNED', 'REDEEMED', 'EXPIRED', 'BONUS'] },
+      description: { type: 'string', nullable: true },
+      orderId: { type: 'string', nullable: true },
+      createdAt: { type: 'string', format: 'date-time' },
+    },
+  },
   AdminUser: {
     type: 'object',
     properties: {

@@ -15,6 +15,8 @@ export const ordersPaths = {
         properties: {
           addressId: { type: 'string' },
           paymentMethod: { type: 'string', enum: ['COD', 'KHALTI', 'ESEWA', 'STRIPE'] },
+          couponCode: { type: 'string', description: 'Optional coupon to apply' },
+          redeemPoints: { type: 'integer', description: 'Optional loyalty points to redeem' },
         },
       }),
       responses: { 201: ok(ref('Order'), 'Order placed'), 400: E[400], 401: E[401], 403: E[403], 409: E[400] },

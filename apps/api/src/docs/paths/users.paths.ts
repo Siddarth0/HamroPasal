@@ -46,6 +46,18 @@ export const usersPaths = {
       responses: { 200: ok(ref('PublicUser')), 401: E[401] },
     },
   },
+  '/users/me/avatar': {
+    post: {
+      tags,
+      summary: 'Upload my avatar',
+      security: bearer,
+      requestBody: {
+        required: true,
+        content: { 'multipart/form-data': { schema: { type: 'object', properties: { avatar: { type: 'string', format: 'binary' } } } } },
+      },
+      responses: { 200: ok(ref('PublicUser')), 400: E[400], 503: { description: 'Cloudinary not configured' } },
+    },
+  },
   '/users/addresses': {
     get: {
       tags,

@@ -70,6 +70,24 @@ export const storesPaths = {
       responses: { 200: ok(ref('Store')), 404: E[404] },
     },
   },
+  '/stores/me/logo': {
+    post: {
+      tags,
+      summary: 'Upload store logo (seller)',
+      security: bearer,
+      requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', properties: { logo: { type: 'string', format: 'binary' } } } } } },
+      responses: { 200: ok(ref('Store')), 400: E[400], 404: E[404], 503: { description: 'Cloudinary not configured' } },
+    },
+  },
+  '/stores/me/cover': {
+    post: {
+      tags,
+      summary: 'Upload store cover (seller)',
+      security: bearer,
+      requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', properties: { cover: { type: 'string', format: 'binary' } } } } } },
+      responses: { 200: ok(ref('Store')), 400: E[400], 404: E[404], 503: { description: 'Cloudinary not configured' } },
+    },
+  },
   '/stores/me/delivery-zones': {
     get: { tags, summary: 'List my delivery zones (seller)', security: bearer, responses: { 200: ok({ type: 'array', items: ref('DeliveryZone') }) } },
     post: { tags, summary: 'Add a delivery zone (seller)', security: bearer, requestBody: jsonBody({ ...zoneBody, required: ['name', 'distanceKm', 'shippingFee'] }), responses: { 201: ok(ref('DeliveryZone')), 400: E[400] } },
