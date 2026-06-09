@@ -68,6 +68,37 @@ export async function fetchStores(
   return { items: data.data, meta: data.meta };
 }
 
+export interface ApiVariant {
+  _id: string;
+  name: string;
+  price: number;
+  comparePrice?: number;
+  stock: number;
+  sku?: string;
+  attributes: Record<string, string>;
+}
+
+export interface ApiProductDetail extends ApiProduct {
+  description: string;
+  stock: number;
+  storeId: string;
+  variants: ApiVariant[];
+  attributes: { name: string; values: string[] }[];
+  tags: string[];
+  // populated with { _id, name, slug } on the detail endpoint
+  categoryId: { _id: string; name: string; slug: string } | string;
+}
+
+export async function fetchProductBySlug(slug: string): Promise<ApiProductDetail> {
+  const { data } = await api.get<ApiEnvelope<ApiProductDetail>>(`/products/${slug}`);
+  return data.data;
+}
+
+export async function fetchCategoryBySlug(slug: string): Promise<ApiCategory> {
+  const { data } = await api.get<ApiEnvelope<ApiCategory>>(`/categories/${slug}`);
+  return data.data;
+}
+
 /* ---- Mapping to the card shape ---- */
 
 const soldLabel = (n: number): string => {
