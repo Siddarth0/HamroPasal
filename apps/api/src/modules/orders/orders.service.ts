@@ -4,6 +4,8 @@ import { Product } from '@/models/product.model';
 import { ApiError } from '@/shared/utils/api-error';
 import { haversineKm } from '@/shared/utils/distance';
 import { selectDeliveryFee } from '@/modules/shipping/shipping.service';
+import { validateCoupon } from '@/modules/coupons/coupons.service';
+import { getBalance, pointsToCurrency, currencyToEarnedPoints } from '@/modules/loyalty/loyalty.service';
 import { createNotification } from '@/modules/notifications/notifications.service';
 import { enqueueEmail } from '@/config/queue';
 import { orderConfirmationTemplate } from '@/modules/notifications/email.templates';
@@ -75,7 +77,12 @@ const reserveStock = async (items: StockItem[]): Promise<void> => {
 
 export const checkout = async (
   userId: string,
-  input: { addressId: string; paymentMethod: PaymentMethod },
+  input: {
+    addressId: string;
+    paymentMethod: PaymentMethod;
+    couponCode?: string;
+    redeemPoints?: number;
+  },
 ) => {
   const address = await prisma.address.findFirst({ where: { id: input.addressId, userId } });
   if (!address) throw new ApiError('Delivery address not found', 404);
@@ -182,7 +189,30 @@ export const checkout = async (
 
   const itemsSubtotal = round2(groups.reduce((s, g) => s + g.subtotal, 0));
   const shippingTotal = round2(groups.reduce((s, g) => s + g.shippingFee, 0));
-  const totalAmount = round2(itemsSubtotal + shippingTotal); // discount/loyalty = 0 for now
+
+  // Coupon — platform absorbs the discount; commission/earnings stay on gross.
+  let couponId: string | null = null;
+  let couponDiscount = 0;
+  if (input.couponCode) {
+    const subtotalByStore = new Map(groups.map((g) => [g.storeId, g.subtotal]));
+    const result = await validateCoupon(userId, input.couponCode, itemsSubtotal, subtotalByStore);
+    couponId = result.coupon.id;
+    couponDiscount = result.discount;
+  }
+
+  // Loyalty redemption — capped so the payable total can't go below 0.
+  let loyaltyPointsUsed = 0;
+  let loyaltyDiscount = 0;
+  if (input.redeemPoints && input.redeemPoints > 0) {
+    const balance = await getBalance(userId);
+    if (input.redeemPoints > balance) throw new ApiError('Insufficient loyalty points', 400);
+    const remaining = Math.max(0, round2(itemsSubtotal + shippingTotal - couponDiscount));
+    loyaltyDiscount = round2(Math.min(pointsToCurrency(input.redeemPoints), remaining));
+    loyaltyPointsUsed = Math.round(loyaltyDiscount / (pointsToCurrency(1) || 1));
+  }
+
+  const totalAmount = round2(itemsSubtotal + shippingTotal - couponDiscount - loyaltyDiscount);
+  const earnedPoints = currencyToEarnedPoints(totalAmount);
 
   const stockItems: StockItem[] = lines.map((l) => ({
     productId: l.productId,
@@ -190,42 +220,65 @@ export const checkout = async (
     quantity: l.quantity,
   }));
 
-  // 3. Reserve stock first (prevents oversell), then write the order.
+  // 3. Reserve stock first (prevents oversell), then write the order atomically
+  //    with the coupon redemption + loyalty ledger entries.
   await reserveStock(stockItems);
 
   let order;
   try {
-    order = await prisma.order.create({
-      data: {
-        userId,
-        addressId: address.id,
-        deliveryLat: address.latitude,
-        deliveryLng: address.longitude,
-        deliveryAddress: `${address.addressLine}, ${address.city}, ${address.district}`,
-        totalAmount,
-        shippingFee: shippingTotal,
-        paymentMethod: input.paymentMethod,
-        subOrders: {
-          create: groups.map((g) => ({
-            storeId: g.storeId,
-            subtotal: g.subtotal,
-            shippingFee: g.shippingFee,
-            commissionFee: g.commissionFee,
-            sellerEarning: g.sellerEarning,
-            orderItems: {
-              create: g.items.map((it) => ({
-                productId: it.productId,
-                variantId: it.variantId,
-                name: it.name,
-                imageUrl: it.imageUrl,
-                price: it.price,
-                quantity: it.quantity,
-              })),
-            },
-          })),
+    order = await prisma.$transaction(async (tx) => {
+      const created = await tx.order.create({
+        data: {
+          userId,
+          addressId: address.id,
+          deliveryLat: address.latitude,
+          deliveryLng: address.longitude,
+          deliveryAddress: `${address.addressLine}, ${address.city}, ${address.district}`,
+          totalAmount,
+          shippingFee: shippingTotal,
+          discountAmount: couponDiscount,
+          loyaltyPointsUsed,
+          couponId,
+          paymentMethod: input.paymentMethod,
+          subOrders: {
+            create: groups.map((g) => ({
+              storeId: g.storeId,
+              subtotal: g.subtotal,
+              shippingFee: g.shippingFee,
+              commissionFee: g.commissionFee,
+              sellerEarning: g.sellerEarning,
+              orderItems: {
+                create: g.items.map((it) => ({
+                  productId: it.productId,
+                  variantId: it.variantId,
+                  name: it.name,
+                  imageUrl: it.imageUrl,
+                  price: it.price,
+                  quantity: it.quantity,
+                })),
+              },
+            })),
+          },
         },
-      },
-      include: { subOrders: { include: { orderItems: true } } },
+        include: { subOrders: { include: { orderItems: true } } },
+      });
+
+      if (couponId) {
+        await tx.couponRedemption.create({ data: { couponId, userId, orderId: created.id } });
+        await tx.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } });
+      }
+      if (loyaltyPointsUsed > 0) {
+        await tx.loyaltyTransaction.create({
+          data: { userId, points: -loyaltyPointsUsed, type: 'REDEEMED', orderId: created.id, description: 'Redeemed at checkout' },
+        });
+      }
+      if (earnedPoints > 0) {
+        await tx.loyaltyTransaction.create({
+          data: { userId, points: earnedPoints, type: 'EARNED', orderId: created.id, description: 'Earned from order' },
+        });
+      }
+
+      return created;
     });
   } catch (err) {
     await releaseStock(stockItems); // compensate the reservation
