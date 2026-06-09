@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { MapPin, Plus, Check, Truck } from 'lucide-react';
+import { MapPin, Plus, Check, Truck, Tag, Sparkles, X } from 'lucide-react';
 import type { Address } from 'shared-types';
 import { useAuthStore } from '@/store/auth';
 import { useCart } from '@/features/cart/hooks';
@@ -13,8 +13,12 @@ import {
   getShippingQuotes,
   placeOrder,
   initiatePayment,
+  validateCoupon,
   type PaymentMethod,
+  type CouponPreview,
 } from '@/features/checkout/api';
+import { fetchLoyaltyBalance } from '@/features/loyalty/api';
+import { Input } from '@/components/ui/input';
 import { AddressForm } from './address-form';
 import { Button } from '@/components/ui/button';
 import { cn, formatPrice } from '@/lib/utils';
@@ -66,6 +70,19 @@ export function CheckoutContent() {
   const [method, setMethod] = useState<PaymentMethod>('COD');
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Coupon + loyalty
+  const [couponInput, setCouponInput] = useState('');
+  const [coupon, setCoupon] = useState<CouponPreview | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [redeemPoints, setRedeemPoints] = useState(0);
+
+  const { data: loyalty } = useQuery({
+    queryKey: ['loyalty'],
+    queryFn: fetchLoyaltyBalance,
+    enabled: status === 'authenticated',
+  });
 
   // Default to the saved default address (or the first one).
   useEffect(() => {
@@ -132,12 +149,43 @@ export function CheckoutContent() {
     .reduce((sum, q) => sum + (q.shippingFee ?? 0), 0);
   const undeliverable = (quotes ?? []).filter((q) => !q.deliverable);
   const itemsSubtotal = cart.subtotal;
-  const total = itemsSubtotal + shippingTotal;
+  const couponDiscount = coupon?.discount ?? 0;
+  const redeemRate = loyalty?.redeemRate ?? 1;
+  const availablePoints = loyalty?.points ?? 0;
+  // Cap points so they never exceed the remaining balance after coupon.
+  const maxRedeemable = Math.max(
+    0,
+    Math.min(availablePoints, Math.floor((itemsSubtotal + shippingTotal - couponDiscount) / redeemRate)),
+  );
+  const pointsApplied = Math.max(0, Math.min(redeemPoints, maxRedeemable));
+  const pointsDiscount = pointsApplied * redeemRate;
+  const total = Math.max(0, itemsSubtotal + shippingTotal - couponDiscount - pointsDiscount);
 
   const onAddressSaved = (a: Address) => {
     qc.invalidateQueries({ queryKey: ['addresses'] });
     setSelectedId(a.id);
     setShowForm(false);
+  };
+
+  const applyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCouponError(null);
+    setCouponLoading(true);
+    try {
+      setCoupon(await validateCoupon(code));
+    } catch (e) {
+      setCoupon(null);
+      setCouponError(getApiErrorMessage(e, 'Invalid or expired coupon'));
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCoupon(null);
+    setCouponInput('');
+    setCouponError(null);
   };
 
   const place = async () => {
@@ -148,8 +196,14 @@ export function CheckoutContent() {
     }
     setPlacing(true);
     try {
-      const order = await placeOrder({ addressId: selectedId, paymentMethod: method });
+      const order = await placeOrder({
+        addressId: selectedId,
+        paymentMethod: method,
+        couponCode: coupon?.code,
+        redeemPoints: pointsApplied > 0 ? pointsApplied : undefined,
+      });
       qc.invalidateQueries({ queryKey: ['cart'] });
+      qc.invalidateQueries({ queryKey: ['loyalty'] });
 
       const result = await initiatePayment(order.id).catch(() => null);
       if (result?.method === 'KHALTI') {
@@ -292,6 +346,76 @@ export function CheckoutContent() {
               ))}
             </div>
           </section>
+
+          {/* Coupon & loyalty points */}
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-bold">
+              <Tag className="h-5 w-5 text-brand" /> Coupon & Points
+            </h2>
+
+            {coupon ? (
+              <div className="flex items-center justify-between rounded-xl border border-brand/30 bg-brand/5 px-3 py-2 text-sm">
+                <span className="font-medium text-brand">
+                  {coupon.code} applied — −{formatPrice(coupon.discount)}
+                </span>
+                <button onClick={removeCoupon} aria-label="Remove coupon" className="text-muted-foreground hover:text-brand">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                  placeholder="Coupon code"
+                  className="h-10 rounded-lg"
+                />
+                <Button type="button" variant="outline" onClick={applyCoupon} disabled={couponLoading}>
+                  {couponLoading ? '…' : 'Apply'}
+                </Button>
+              </div>
+            )}
+            {couponError && <p className="mt-1 text-xs text-brand">{couponError}</p>}
+
+            {availablePoints > 0 && (
+              <div className="mt-4 border-t border-border pt-4">
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="h-4 w-4 text-brand" /> Loyalty points
+                  </span>
+                  <span className="text-muted-foreground">{availablePoints} available</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={maxRedeemable}
+                    value={redeemPoints || ''}
+                    onChange={(e) =>
+                      setRedeemPoints(Math.max(0, Math.min(maxRedeemable, Number(e.target.value) || 0)))
+                    }
+                    placeholder="0"
+                    className="h-10 w-28 rounded-lg"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRedeemPoints(maxRedeemable)}
+                    disabled={maxRedeemable === 0}
+                  >
+                    Use max
+                  </Button>
+                  {pointsDiscount > 0 && (
+                    <span className="text-sm text-muted-foreground">−{formatPrice(pointsDiscount)}</span>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  1 point = {formatPrice(redeemRate)} · up to {maxRedeemable} here.
+                </p>
+              </div>
+            )}
+          </section>
         </div>
 
         {/* Summary */}
@@ -309,6 +433,18 @@ export function CheckoutContent() {
                   {canQuote ? formatPrice(shippingTotal) : 'Select address'}
                 </span>
               </div>
+              {couponDiscount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Coupon ({coupon?.code})</span>
+                  <span>−{formatPrice(couponDiscount)}</span>
+                </div>
+              )}
+              {pointsDiscount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Points ({pointsApplied})</span>
+                  <span>−{formatPrice(pointsDiscount)}</span>
+                </div>
+              )}
             </div>
             <div className="mt-4 flex justify-between border-t border-border pt-4">
               <span className="font-semibold">Total</span>

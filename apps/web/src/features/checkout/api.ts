@@ -24,6 +24,18 @@ export async function placeOrder(input: PlaceOrderInput): Promise<{ id: string }
   return data.data;
 }
 
+export interface CouponPreview {
+  code: string;
+  discountType: 'PERCENTAGE' | 'FLAT';
+  discount: number;
+}
+
+/** Validate a coupon against the user's current cart; returns the discount amount. */
+export async function validateCoupon(code: string): Promise<CouponPreview> {
+  const { data } = await api.post<ApiEnvelope<CouponPreview>>('/coupons/validate', { code });
+  return data.data;
+}
+
 export type InitiateResult =
   | { method: 'COD'; message: string }
   | { method: 'KHALTI'; paymentUrl: string; pidx: string }
