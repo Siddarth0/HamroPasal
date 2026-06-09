@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, ShoppingCart, Bell, ChevronDown } from 'lucide-react';
+import { Search, ShoppingCart, Bell, Heart, ChevronDown } from 'lucide-react';
 import { Logo } from './logo';
 import { Button } from '@/components/ui/button';
 import { useCartCount } from '@/features/cart/hooks';
+import { useWishlistCount } from '@/features/wishlist/hooks';
 
 function SearchBar() {
   const router = useRouter();
@@ -36,6 +37,7 @@ function SearchBar() {
 
 export function SiteHeader() {
   const cartCount = useCartCount();
+  const wishlistCount = useWishlistCount();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
@@ -54,6 +56,16 @@ export function SiteHeader() {
         </div>
 
         <div className="ml-auto flex items-center gap-1">
+          <Link href="/wishlist" className="relative" aria-label="Wishlist">
+            <Button variant="ghost" size="icon">
+              <Heart className="h-5 w-5" />
+            </Button>
+            {wishlistCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
+                {wishlistCount > 99 ? '99+' : wishlistCount}
+              </span>
+            )}
+          </Link>
           <Link href="/cart" className="relative" aria-label="Cart">
             <Button variant="ghost" size="icon">
               <ShoppingCart className="h-5 w-5" />

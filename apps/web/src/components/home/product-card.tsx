@@ -3,8 +3,13 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { Heart, Star } from 'lucide-react';
 import { cn, formatPrice } from '@/lib/utils';
+import { useAuthStore } from '@/store/auth';
+import { useWishlistIds, useToggleWishlist } from '@/features/wishlist/hooks';
+
+const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 
 /** Normalized shape the card renders — mock and live API data both map to this. */
 export interface CardProduct {
@@ -20,7 +25,28 @@ export interface CardProduct {
 }
 
 export function ProductCard({ product, mode }: { product: CardProduct; mode: 'flash' | 'rating' }) {
-  const [liked, setLiked] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const status = useAuthStore((s) => s.status);
+  const wishlistIds = useWishlistIds();
+  const { toggle } = useToggleWishlist();
+
+  // Mock/fallback cards don't have real product ids; fall back to local state for those.
+  const isReal = OBJECT_ID.test(product.id);
+  const [localLiked, setLocalLiked] = useState(false);
+  const wishlisted = isReal ? wishlistIds.has(product.id) : localLiked;
+
+  const onHeart = () => {
+    if (!isReal) {
+      setLocalLiked((v) => !v);
+      return;
+    }
+    if (status !== 'authenticated') {
+      router.push(`/login?returnUrl=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    toggle(product.id, wishlistIds.has(product.id));
+  };
 
   return (
     <div className="group relative overflow-hidden rounded-lg border border-border bg-card transition-shadow hover:shadow-md">
@@ -36,11 +62,11 @@ export function ProductCard({ product, mode }: { product: CardProduct; mode: 'fl
         </div>
       </Link>
       <button
-        onClick={() => setLiked((v) => !v)}
-        aria-label="Add to wishlist"
+        onClick={onHeart}
+        aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         className="absolute right-2.5 top-2.5 grid h-8 w-8 place-items-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-colors hover:bg-white"
       >
-        <Heart className={cn('h-4 w-4', liked ? 'fill-brand text-brand' : 'text-muted-foreground')} />
+        <Heart className={cn('h-4 w-4', wishlisted ? 'fill-brand text-brand' : 'text-muted-foreground')} />
       </button>
 
       <div className="space-y-1.5 p-3">
