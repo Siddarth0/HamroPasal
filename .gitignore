@@ -12,5 +12,6 @@ apps/api/src/generated
 .claude
 PROGRESS.md
 
-# Local-only REST client request files
+# Local-only REST client request files + dev scripts
 apps/api/requests/
+apps/api/scripts/
