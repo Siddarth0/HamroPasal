@@ -103,6 +103,37 @@ export interface Payout {
   createdAt: string;
 }
 
+export type DiscountType = 'PERCENTAGE' | 'FLAT';
+
+export interface Coupon {
+  id: string;
+  code: string;
+  description: string | null;
+  discountType: DiscountType;
+  discountValue: number;
+  minOrderAmount: number;
+  maxDiscount: number | null;
+  usageLimit: number | null;
+  usedCount: number;
+  isActive: boolean;
+  startsAt: string;
+  expiresAt: string | null;
+  storeId: string | null; // null = platform-wide
+  createdAt: string;
+}
+
+export type LoyaltyType = 'EARNED' | 'REDEEMED' | 'EXPIRED' | 'BONUS';
+
+export interface LoyaltyTransaction {
+  id: string;
+  userId: string;
+  points: number; // signed
+  type: LoyaltyType;
+  description: string | null;
+  orderId: string | null;
+  createdAt: string;
+}
+
 /** Seller earnings overview. */
 export interface SellerEarnings {
   delivered: { count: number; earnings: number };
