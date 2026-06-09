@@ -3,37 +3,76 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, Package } from 'lucide-react';
-import { fetchOrder } from '@/features/orders/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { CheckCircle2, Package, XCircle } from 'lucide-react';
+import { fetchOrder, cancelOrder } from '@/features/orders/api';
+import { StatusBadge, ORDER_FLOW } from './status-badge';
+import { Button } from '@/components/ui/button';
 import { cn, formatPrice } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/api';
 
-const statusStyle: Record<string, string> = {
-  PENDING: 'bg-amber-100 text-amber-700',
-  CONFIRMED: 'bg-blue-100 text-blue-700',
-  PROCESSING: 'bg-blue-100 text-blue-700',
-  SHIPPED: 'bg-indigo-100 text-indigo-700',
-  DELIVERED: 'bg-green-100 text-green-700',
-  CANCELLED: 'bg-red-100 text-red-700',
-};
+const CANCELLABLE = ['PENDING', 'CONFIRMED'];
 
-function Badge({ status }: { status: string }) {
+function Timeline({ status }: { status: string }) {
+  if (status === 'CANCELLED') {
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <XCircle className="h-5 w-5" /> This order was cancelled.
+      </div>
+    );
+  }
+  const current = ORDER_FLOW.indexOf(status as (typeof ORDER_FLOW)[number]);
   return (
-    <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-semibold', statusStyle[status] ?? 'bg-muted text-muted-foreground')}>
-      {status}
-    </span>
+    <div className="flex items-center">
+      {ORDER_FLOW.map((step, i) => {
+        const done = i <= current;
+        return (
+          <div key={step} className="flex flex-1 items-center last:flex-none">
+            <div className="flex flex-col items-center">
+              <span
+                className={cn(
+                  'grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold',
+                  done ? 'bg-brand text-brand-foreground' : 'bg-muted text-muted-foreground',
+                )}
+              >
+                {i + 1}
+              </span>
+              <span className={cn('mt-1 text-[10px]', done ? 'text-foreground' : 'text-muted-foreground')}>
+                {step}
+              </span>
+            </div>
+            {i < ORDER_FLOW.length - 1 && (
+              <span className={cn('mx-1 h-0.5 flex-1', i < current ? 'bg-brand' : 'bg-muted')} />
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
 export function OrderDetail({ id }: { id: string }) {
   const params = useSearchParams();
+  const qc = useQueryClient();
   const justPlaced = params.get('placed') === '1';
+
   const { data: order, isLoading, isError } = useQuery({
     queryKey: ['order', id],
     queryFn: () => fetchOrder(id),
   });
 
-  if (isLoading) return <div className="container py-24 text-center text-sm text-muted-foreground">Loading order…</div>;
+  const cancel = useMutation({
+    mutationFn: () => cancelOrder(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['order', id] });
+      qc.invalidateQueries({ queryKey: ['my-orders'] });
+    },
+    onError: (e) => alert(getApiErrorMessage(e, 'Could not cancel the order')),
+  });
+
+  if (isLoading) {
+    return <div className="container py-24 text-center text-sm text-muted-foreground">Loading order…</div>;
+  }
 
   if (isError || !order) {
     return (
@@ -47,6 +86,7 @@ export function OrderDetail({ id }: { id: string }) {
   }
 
   const itemsSubtotal = order.subOrders.reduce((s, so) => s + so.subtotal, 0);
+  const canCancel = CANCELLABLE.includes(order.status);
 
   return (
     <div className="container max-w-3xl py-8">
@@ -64,7 +104,7 @@ export function OrderDetail({ id }: { id: string }) {
         </div>
       )}
 
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="font-display text-2xl font-bold">Order #{order.id.slice(0, 8)}</h1>
           <p className="text-sm text-muted-foreground">
@@ -72,11 +112,30 @@ export function OrderDetail({ id }: { id: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge status={order.status} />
+          <StatusBadge status={order.status} />
           <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
             {order.paymentMethod} · {order.paymentStatus}
           </span>
         </div>
+      </div>
+
+      {/* Tracking */}
+      <div className="mb-6 rounded-2xl border border-border bg-card p-5">
+        <Timeline status={order.status} />
+        {canCancel && (
+          <div className="mt-4 border-t border-border pt-4 text-right">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={cancel.isPending}
+              onClick={() => {
+                if (confirm('Cancel this order?')) cancel.mutate();
+              }}
+            >
+              {cancel.isPending ? 'Cancelling…' : 'Cancel order'}
+            </Button>
+          </div>
+        )}
       </div>
 
       {order.address && (
@@ -99,7 +158,7 @@ export function OrderDetail({ id }: { id: string }) {
                 <Package className="h-4 w-4 text-muted-foreground" />
                 {so.store?.name ?? 'Store'}
               </span>
-              <Badge status={so.status} />
+              <StatusBadge status={so.status} />
             </div>
             <ul className="divide-y divide-border">
               {so.orderItems.map((it) => (
@@ -149,8 +208,8 @@ export function OrderDetail({ id }: { id: string }) {
       </div>
 
       <div className="mt-6 text-center">
-        <Link href="/products" className="text-sm text-brand hover:underline">
-          Continue shopping →
+        <Link href="/account/orders" className="text-sm text-brand hover:underline">
+          View all orders →
         </Link>
       </div>
     </div>

@@ -22,3 +22,20 @@ export async function createAddress(input: CreateAddressInput): Promise<Address>
   const { data } = await api.post<ApiEnvelope<Address>>('/users/addresses', input);
   return data.data;
 }
+
+export async function updateAddress(
+  id: string,
+  input: Partial<CreateAddressInput>,
+): Promise<Address> {
+  const { data } = await api.patch<ApiEnvelope<Address>>(`/users/addresses/${id}`, input);
+  return data.data;
+}
+
+export async function setDefaultAddress(id: string): Promise<Address> {
+  const { data } = await api.patch<ApiEnvelope<Address>>(`/users/addresses/${id}/default`);
+  return data.data;
+}
+
+export async function deleteAddress(id: string): Promise<void> {
+  await api.delete(`/users/addresses/${id}`);
+}
