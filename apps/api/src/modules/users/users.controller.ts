@@ -1,8 +1,10 @@
 import { asyncHandler } from '@/shared/utils/async-handler';
 import { ApiResponse } from '@/shared/utils/api-response';
+import { ApiError } from '@/shared/utils/api-error';
 import {
   getProfile,
   updateProfile,
+  updateAvatar,
   listAddresses,
   createAddress,
   updateAddress,
@@ -23,6 +25,12 @@ export const updateMe = asyncHandler(async (req, res) => {
   const data = updateProfileSchema.parse(req.body);
   const user = await updateProfile(req.user!.userId, data);
   ApiResponse.success(res, user, 'Profile updated');
+});
+
+export const uploadAvatar = asyncHandler(async (req, res) => {
+  if (!req.file) throw new ApiError('No image file provided', 400);
+  const user = await updateAvatar(req.user!.userId, req.file.buffer);
+  ApiResponse.success(res, user, 'Avatar updated');
 });
 
 //-----Addresses----------

@@ -1,10 +1,13 @@
 import { Router } from 'express';
 import { authenticate } from '@/shared/middlewares/auth.guard';
 import { authorize } from '@/shared/middlewares/role.guard';
+import { upload } from '@/shared/middlewares/upload';
 import {
   createStore,
   getMine,
   updateMine,
+  uploadLogo,
+  uploadCover,
   browseStores,
   getBySlug,
   adminListStores,
@@ -25,6 +28,8 @@ const seller = [authenticate, authorize('SELLER')];
 router.post('/', ...seller, createStore);
 router.get('/me', ...seller, getMine);
 router.patch('/me', ...seller, updateMine);
+router.post('/me/logo', ...seller, upload.single('logo'), uploadLogo);
+router.post('/me/cover', ...seller, upload.single('cover'), uploadCover);
 
 router.get('/me/delivery-zones', ...seller, getMyZones);
 router.post('/me/delivery-zones', ...seller, addZone);

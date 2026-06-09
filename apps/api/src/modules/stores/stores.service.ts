@@ -1,5 +1,7 @@
 import { prisma } from '@/config/db.postgres';
+import { Product } from '@/models/product.model';
 import { ApiError } from '@/shared/utils/api-error';
+import { uploadImageWithId } from '@/config/cloudinary';
 import { slugify } from '@/shared/utils/slug';
 import { buildPaginationMeta, type Pagination } from '@/shared/utils/pagination';
 import type { StoreStatus } from '@/generated/prisma';
@@ -78,6 +80,25 @@ export const updateMyStore = async (
   return prisma.store.update({ where: { ownerId }, data });
 };
 
+// Uploads logo/cover to a fixed publicId per store and saves the URL.
+export const updateStoreImage = async (
+  ownerId: string,
+  kind: 'logo' | 'cover',
+  fileBuffer: Buffer,
+) => {
+  const store = await prisma.store.findUnique({
+    where: { ownerId },
+    select: { id: true },
+  });
+  if (!store) throw new ApiError('You have not created a store yet', 404);
+
+  const { url } = await uploadImageWithId(fileBuffer, `stores/${store.id}/${kind}`);
+  return prisma.store.update({
+    where: { ownerId },
+    data: kind === 'logo' ? { logoUrl: url } : { coverUrl: url },
+  });
+};
+
 /* ------------------------------- Public ------------------------------- */
 
 export const listPublicStores = async (pagination: Pagination, search?: string) => {
@@ -154,7 +175,17 @@ export const updateStoreByAdmin = async (
   });
   if (!store) throw new ApiError('Store not found', 404);
 
-  return prisma.store.update({ where: { id: storeId }, data });
+  const updated = await prisma.store.update({ where: { id: storeId }, data });
+
+  // Keep catalog visibility in sync: a store's products are browsable only while ACTIVE.
+  if (data.status !== undefined) {
+    await Product.updateMany(
+      { storeId },
+      { storeActive: data.status === 'ACTIVE' },
+    );
+  }
+
+  return updated;
 };
 
 /* --------------------------- Delivery zones --------------------------- */

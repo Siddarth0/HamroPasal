@@ -1,5 +1,6 @@
 import { prisma } from '@/config/db.postgres';
 import { ApiError } from '@/shared/utils/api-error';
+import { uploadImageWithId } from '@/config/cloudinary';
 
 const profileSelect = {
   id: true,
@@ -33,6 +34,15 @@ export const updateProfile = async (
     data,
     select: profileSelect,
   });
+
+export const updateAvatar = async (userId: string, fileBuffer: Buffer) => {
+  const { url } = await uploadImageWithId(fileBuffer, `avatars/${userId}`);
+  return prisma.user.update({
+    where: { id: userId },
+    data: { avatarUrl: url },
+    select: profileSelect,
+  });
+};
 
 /* ------------------------------ Addresses ------------------------------ */
 

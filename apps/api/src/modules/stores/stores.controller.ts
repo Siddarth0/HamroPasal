@@ -1,10 +1,12 @@
 import { asyncHandler } from '@/shared/utils/async-handler';
 import { ApiResponse } from '@/shared/utils/api-response';
+import { ApiError } from '@/shared/utils/api-error';
 import { getPagination } from '@/shared/utils/pagination';
 import {
   applyForStore,
   getMyStore,
   updateMyStore,
+  updateStoreImage,
   listPublicStores,
   getStoreBySlug,
   listStoresForAdmin,
@@ -40,6 +42,18 @@ export const updateMine = asyncHandler(async (req, res) => {
   const data = updateStoreSchema.parse(req.body);
   const store = await updateMyStore(req.user!.userId, data);
   ApiResponse.success(res, store, 'Store updated');
+});
+
+export const uploadLogo = asyncHandler(async (req, res) => {
+  if (!req.file) throw new ApiError('No image file provided', 400);
+  const store = await updateStoreImage(req.user!.userId, 'logo', req.file.buffer);
+  ApiResponse.success(res, store, 'Logo updated');
+});
+
+export const uploadCover = asyncHandler(async (req, res) => {
+  if (!req.file) throw new ApiError('No image file provided', 400);
+  const store = await updateStoreImage(req.user!.userId, 'cover', req.file.buffer);
+  ApiResponse.success(res, store, 'Cover updated');
 });
 
 /* ------------------------------- Public ------------------------------- */

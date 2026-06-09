@@ -48,6 +48,33 @@ export const uploadImage = (
   });
 };
 
+/**
+ * Uploads to a FIXED publicId, overwriting any existing asset there (and
+ * invalidating the CDN). Use for single-image fields (avatar, store logo/cover)
+ * so replacing never leaks orphans and the publicId is derivable — no DB column.
+ */
+export const uploadImageWithId = (
+  fileBuffer: Buffer,
+  publicId: string
+): Promise<UploadedImage> => {
+  if (!isCloudinaryConfigured) {
+    throw new ApiError("Image uploads are not configured", 503);
+  }
+
+  return new Promise<UploadedImage>((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { public_id: publicId, overwrite: true, invalidate: true, resource_type: "image" },
+      (error, result) => {
+        if (error || !result) {
+          return reject(error ?? new ApiError("Image upload failed", 502));
+        }
+        resolve({ url: result.secure_url, publicId: result.public_id });
+      }
+    );
+    stream.end(fileBuffer);
+  });
+};
+
 /** Deletes an image by its publicId. Safe to call with a missing/empty id. */
 export const deleteImage = async (publicId?: string): Promise<void> => {
   if (!isCloudinaryConfigured || !publicId) return;
