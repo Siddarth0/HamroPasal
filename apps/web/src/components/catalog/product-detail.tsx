@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Star, Minus, Plus, ShoppingCart, Store, Check } from 'lucide-react';
 import { useProduct } from '@/features/catalog/hooks';
 import type { ApiVariant } from '@/features/catalog/api';
@@ -19,6 +20,7 @@ const placeholder = (seed: string) =>
 
 export function ProductDetail({ slug }: { slug: string }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const status = useAuthStore((s) => s.status);
   const { data: product, isLoading, isError } = useProduct(slug);
 
@@ -73,7 +75,8 @@ export function ProductDetail({ slug }: { slug: string }) {
     setAddState('adding');
     setAddMsg(null);
     try {
-      await addToCart({ productId: product._id, variantId: variant?._id, quantity: qty });
+      const cart = await addToCart({ productId: product._id, variantId: variant?._id, quantity: qty });
+      queryClient.setQueryData(['cart'], cart); // refresh the header badge
       setAddState('added');
       setTimeout(() => setAddState('idle'), 2500);
     } catch (e) {

@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, ShoppingCart, Bell, ChevronDown } from 'lucide-react';
 import { Logo } from './logo';
 import { Button } from '@/components/ui/button';
+import { useCartCount } from '@/features/cart/hooks';
 
 function SearchBar() {
   const router = useRouter();
@@ -33,6 +35,8 @@ function SearchBar() {
 }
 
 export function SiteHeader() {
+  const cartCount = useCartCount();
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
       <div className="container flex h-16 items-center gap-3 md:gap-5">
@@ -40,17 +44,26 @@ export function SiteHeader() {
 
         {/* All Category + search */}
         <div className="ml-2 hidden flex-1 items-center gap-2 md:flex">
-          <Button variant="outline" size="sm" className="h-11 shrink-0 gap-1.5 px-4 text-muted-foreground">
-            All Category
-            <ChevronDown className="h-4 w-4" />
+          <Button asChild variant="outline" size="sm" className="h-11 shrink-0 gap-1.5 px-4 text-muted-foreground">
+            <Link href="/categories">
+              All Category
+              <ChevronDown className="h-4 w-4" />
+            </Link>
           </Button>
           <SearchBar />
         </div>
 
         <div className="ml-auto flex items-center gap-1">
-          <Button variant="ghost" size="icon" aria-label="Cart">
-            <ShoppingCart className="h-5 w-5" />
-          </Button>
+          <Link href="/cart" className="relative" aria-label="Cart">
+            <Button variant="ghost" size="icon">
+              <ShoppingCart className="h-5 w-5" />
+            </Button>
+            {cartCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            )}
+          </Link>
           <Button variant="ghost" size="icon" aria-label="Notifications">
             <Bell className="h-5 w-5" />
           </Button>
