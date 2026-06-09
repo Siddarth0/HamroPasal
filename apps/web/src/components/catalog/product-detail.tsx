@@ -10,6 +10,7 @@ import type { ApiVariant } from '@/features/catalog/api';
 import { addToCart } from '@/features/cart/api';
 import { useAuthStore } from '@/store/auth';
 import { Button } from '@/components/ui/button';
+import { ProductTabs } from './product-tabs';
 import { cn, formatPrice } from '@/lib/utils';
 import { getApiErrorMessage } from '@/lib/api';
 
@@ -230,20 +231,14 @@ export function ProductDetail({ slug }: { slug: string }) {
         </div>
       </div>
 
-      {/* Description */}
-      <div className="mt-10 max-w-3xl">
-        <h2 className="mb-3 font-display text-lg font-bold">Description</h2>
-        <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/80">{product.description}</p>
-        {product.tags?.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {product.tags.map((t) => (
-              <span key={t} className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
-                #{t}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Description / Reviews / Q&A */}
+      <ProductTabs
+        productId={product._id}
+        description={product.description}
+        tags={product.tags ?? []}
+        avgRating={product.avgRating ?? 0}
+        reviewCount={product.reviewCount ?? 0}
+      />
     </div>
   );
 }
