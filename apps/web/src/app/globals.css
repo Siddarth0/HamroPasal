@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 6% 10%;
+
+    --muted: 240 6% 96%;
+    --muted-foreground: 240 4% 46%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 6% 10%;
+
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 240 6% 10%;
+
+    /* near-black primary (buttons, active pills) */
+    --primary: 240 6% 10%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 6% 96%;
+    --secondary-foreground: 240 6% 10%;
+
+    --accent: 240 6% 96%;
+    --accent-foreground: 240 6% 10%;
+
+    /* orange brand accent (HamroPasal logo) */
+    --brand: 16 88% 53%;
+    --brand-foreground: 0 0% 100%;
+
+    /* navy (HamroPasal logo) — used for the dark footer + brand wordmark */
+    --navy: 225 47% 24%;
+    --footer: 224 44% 14%;
+    --footer-foreground: 0 0% 100%;
+
+    --radius: 0.85rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-muted/40 text-foreground font-sans antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+}
+
+/* hide scrollbar for horizontal carousels */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
