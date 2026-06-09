@@ -31,6 +31,7 @@ import chatRouter from '@/modules/chat/chat.route';
 import notificationsRouter from '@/modules/notifications/notifications.route';
 import couponsRouter from '@/modules/coupons/coupons.route';
 import loyaltyRouter from '@/modules/loyalty/loyalty.route';
+import questionsRouter from '@/modules/questions/questions.route';
 import { errorHandler } from '@/shared/middlewares/error.handler';
 
 const app: Application = express();
@@ -118,6 +119,7 @@ app.use('/api/chat', chatRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/coupons', couponsRouter);
 app.use('/api/loyalty', loyaltyRouter);
+app.use('/api/questions', questionsRouter);
 
 //------------404 handler--------------------
 app.use((_req: Request, res: Response) => {

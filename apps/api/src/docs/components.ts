@@ -181,6 +181,20 @@ export const schemas = {
       createdAt: { type: 'string', format: 'date-time' },
     },
   },
+  Question: {
+    type: 'object',
+    properties: {
+      _id: { type: 'string' },
+      productId: { type: 'string' },
+      storeId: { type: 'string' },
+      userId: { type: 'string' },
+      question: { type: 'string' },
+      answer: { type: 'string', nullable: true },
+      answeredBy: { type: 'string', nullable: true },
+      answeredAt: { type: 'string', format: 'date-time', nullable: true },
+      createdAt: { type: 'string', format: 'date-time' },
+    },
+  },
   Return: {
     type: 'object',
     properties: {
