@@ -6,14 +6,17 @@ import { slugify } from '@/shared/utils/slug';
 import { uploadImage, deleteImage } from '@/config/cloudinary';
 import { buildPaginationMeta, type Pagination } from '@/shared/utils/pagination';
 
-const getOwnedStoreId = async (ownerId: string): Promise<string> => {
+const getOwnedStore = async (ownerId: string) => {
   const store = await prisma.store.findUnique({
     where: { ownerId },
-    select: { id: true },
+    select: { id: true, status: true },
   });
   if (!store) throw new ApiError('Create a store before adding products', 404);
-  return store.id;
+  return store;
 };
+
+const getOwnedStoreId = async (ownerId: string): Promise<string> =>
+  (await getOwnedStore(ownerId)).id;
 
 const generateUniqueSlug = async (name: string): Promise<string> => {
   const base = slugify(name) || 'product';
@@ -43,10 +46,16 @@ const getOwnedProduct = async (ownerId: string, productId: string) => {
 /* ------------------------------- Seller ------------------------------- */
 
 export const createProduct = async (ownerId: string, data: Record<string, unknown>) => {
-  const storeId = await getOwnedStoreId(ownerId);
+  const store = await getOwnedStore(ownerId);
   await ensureCategoryExists(data.categoryId as string);
   const slug = await generateUniqueSlug(data.name as string);
-  return Product.create({ ...data, storeId, slug });
+  // storeActive mirrors store status so a PENDING/SUSPENDED store's products stay hidden.
+  return Product.create({
+    ...data,
+    storeId: store.id,
+    slug,
+    storeActive: store.status === 'ACTIVE',
+  });
 };
 
 export const listMyProducts = async (
@@ -139,7 +148,7 @@ const SORT_MAP: Record<string, Record<string, 1 | -1>> = {
 };
 
 export const browseProducts = async (pagination: Pagination, filters: BrowseFilters) => {
-  const filter: Record<string, any> = { isActive: true };
+  const filter: Record<string, any> = { isActive: true, storeActive: true };
 
   if (filters.categoryId) filter.categoryId = filters.categoryId;
   if (filters.storeId) filter.storeId = filters.storeId;
@@ -163,7 +172,7 @@ export const browseProducts = async (pagination: Pagination, filters: BrowseFilt
 };
 
 export const getProductBySlug = async (slug: string) => {
-  const product = await Product.findOne({ slug, isActive: true }).populate(
+  const product = await Product.findOne({ slug, isActive: true, storeActive: true }).populate(
     'categoryId',
     'name slug',
   );

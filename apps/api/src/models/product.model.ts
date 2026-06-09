@@ -30,6 +30,7 @@ export interface IProduct extends Document {
   attributes: ProductAttribute[];
   tags: string[];
   isActive: boolean;
+  storeActive: boolean; // denormalized: store.status === ACTIVE (synced on approve/suspend)
   avgRating: number;
   reviewCount: number;
   soldCount: number;
@@ -67,6 +68,7 @@ const productSchema = new Schema<IProduct>(
     attributes: [attributeSchema],
     tags: [String],
     isActive: { type: Boolean, default: true },
+    storeActive: { type: Boolean, default: true },
     avgRating: { type: Number, default: 0, min: 0, max: 5 },
     reviewCount: { type: Number, default: 0 },
     soldCount: { type: Number, default: 0 },
