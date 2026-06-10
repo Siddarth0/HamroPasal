@@ -214,7 +214,16 @@ export function CheckoutContent() {
         submitEsewaForm(result.url, result.fields);
         return;
       }
-      // COD (confirmed) / Stripe (needs Elements) / gateway not configured → show the order.
+      // A redirect gateway that didn't return a redirect means initiation failed
+      // (e.g. not configured) — surface it instead of pretending the order is done.
+      if (method === 'KHALTI' || method === 'ESEWA') {
+        setError(
+          'We could not start the payment with your selected method. Please try again or choose another method.',
+        );
+        setPlacing(false);
+        return;
+      }
+      // COD (confirmed) / Stripe (needs Elements) → show the order.
       router.push(`/orders/${order.id}?placed=1`);
     } catch (e) {
       setError(getApiErrorMessage(e, 'Could not place your order'));
