@@ -7,6 +7,8 @@ import {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
+  AUDIENCES,
+  type Audience,
 } from '@/shared/utils/jwt';
 import {
   sendOtpEmail,
@@ -28,7 +30,9 @@ const MAX_OTP_ATTEMPTS = 5;
 
 type OtpPurpose = 'verify' | 'pwreset';
 
-const refreshKey = (userId: string) => `auth:refresh:${userId}`;
+// Refresh tokens are keyed per audience so each app (web/seller/admin) holds an
+// independent session for the same user.
+const refreshKey = (scope: Audience, userId: string) => `auth:refresh:${scope}:${userId}`;
 const otpKey = (purpose: OtpPurpose, email: string) =>
   `auth:otp:${purpose}:${email.toLowerCase()}`;
 const otpAttemptsKey = (purpose: OtpPurpose, email: string) =>
@@ -50,12 +54,17 @@ const publicUserSelect = {
 /* Session helpers (refresh token lives in Redis, single session)     */
 /* ------------------------------------------------------------------ */
 
-/** Issues a fresh access+refresh pair and persists the refresh token in Redis. */
-export const createSession = async (userId: string) => {
-  const accessToken = generateAccessToken(userId);
-  const refreshToken = generateRefreshToken(userId);
-  await redis.set(refreshKey(userId), refreshToken, 'EX', REFRESH_TTL_SECONDS);
+/** Issues a fresh access+refresh pair (bound to one app) and stores it in Redis. */
+export const createSession = async (userId: string, scope: Audience) => {
+  const accessToken = generateAccessToken(userId, scope);
+  const refreshToken = generateRefreshToken(userId, scope);
+  await redis.set(refreshKey(scope, userId), refreshToken, 'EX', REFRESH_TTL_SECONDS);
   return { accessToken, refreshToken };
+};
+
+/** Revoke every app session for a user (used on password change/reset). */
+export const revokeAllSessions = async (userId: string): Promise<void> => {
+  await redis.del(...AUDIENCES.map((scope) => refreshKey(scope, userId)));
 };
 
 /* ------------------------------------------------------------------ */
@@ -102,13 +111,16 @@ const consumeOtp = async (
 /* Register                                                           */
 /* ------------------------------------------------------------------ */
 
-export const registerUser = async (data: {
-  email: string;
-  password: string;
-  name: string;
-  phone?: string;
-  role: Role;
-}) => {
+export const registerUser = async (
+  data: {
+    email: string;
+    password: string;
+    name: string;
+    phone?: string;
+    role: Role;
+  },
+  scope: Audience,
+) => {
   const existing = await prisma.user.findUnique({ where: { email: data.email } });
   if (existing) throw new ApiError('Email already in use', 409);
 
@@ -123,7 +135,7 @@ export const registerUser = async (data: {
   // sendOtpEmail swallows its own errors, so a mail outage never blocks signup.
   await sendOtpEmail(user.email, otp, OTP_TTL_MINUTES);
 
-  const { accessToken, refreshToken } = await createSession(user.id);
+  const { accessToken, refreshToken } = await createSession(user.id, scope);
 
   return { user, accessToken, refreshToken };
 };
@@ -132,7 +144,7 @@ export const registerUser = async (data: {
 /* Login                                                              */
 /* ------------------------------------------------------------------ */
 
-export const loginUser = async (email: string, password: string) => {
+export const loginUser = async (email: string, password: string, scope: Audience) => {
   const user = await prisma.user.findUnique({
     where: { email },
     select: { ...publicUserSelect, password: true, isActive: true },
@@ -144,7 +156,7 @@ export const loginUser = async (email: string, password: string) => {
   const valid = await comparePassword(password, user.password);
   if (!valid) throw new ApiError('Invalid credentials', 401);
 
-  const { accessToken, refreshToken } = await createSession(user.id);
+  const { accessToken, refreshToken } = await createSession(user.id, scope);
 
   // Strip password/isActive before returning.
   const { password: _pw, isActive: _active, ...publicUser } = user;
@@ -155,29 +167,33 @@ export const loginUser = async (email: string, password: string) => {
 /* Refresh (rotation, validated against Redis)                        */
 /* ------------------------------------------------------------------ */
 
-export const refreshAccessToken = async (token: string) => {
+export const refreshAccessToken = async (token: string, scope: Audience) => {
   let userId: string;
+  let tokenScope: Audience | undefined;
   try {
-    ({ userId } = verifyRefreshToken(token));
+    ({ userId, scope: tokenScope } = verifyRefreshToken(token));
   } catch {
     throw new ApiError('Invalid or expired refresh token', 401);
   }
 
-  const stored = await redis.get(refreshKey(userId));
+  // The token must have been minted for the app that's asking (Origin-derived).
+  if (tokenScope !== scope) throw new ApiError('Invalid or expired refresh token', 401);
+
+  const stored = await redis.get(refreshKey(scope, userId));
   if (!stored || stored !== token) {
     throw new ApiError('Invalid or expired refresh token', 401);
   }
 
   // createSession overwrites the stored token, invalidating the old one.
-  return createSession(userId);
+  return createSession(userId, scope);
 };
 
 /* ------------------------------------------------------------------ */
 /* Logout                                                             */
 /* ------------------------------------------------------------------ */
 
-export const logoutUser = async (userId: string): Promise<void> => {
-  await redis.del(refreshKey(userId));
+export const logoutUser = async (userId: string, scope: Audience): Promise<void> => {
+  await redis.del(refreshKey(scope, userId));
 };
 
 /* ------------------------------------------------------------------ */
@@ -252,8 +268,8 @@ export const resetPassword = async (
     data: { password: await hashPassword(newPassword) },
   });
 
-  // Invalidate any active session so old refresh tokens stop working.
-  await redis.del(refreshKey(user.id));
+  // Invalidate every app session so old refresh tokens stop working.
+  await revokeAllSessions(user.id);
 };
 
 export const changePassword = async (
@@ -278,8 +294,8 @@ export const changePassword = async (
     data: { password: await hashPassword(newPassword) },
   });
 
-  // Revoke the active session so other devices must re-authenticate.
-  await redis.del(refreshKey(userId));
+  // Revoke every app session so other devices/apps must re-authenticate.
+  await revokeAllSessions(userId);
 };
 
 /* ------------------------------------------------------------------ */

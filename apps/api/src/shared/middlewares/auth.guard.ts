@@ -16,7 +16,7 @@ export const authenticate = async (
       throw new ApiError("No token provided", 401);
     }
 
-    const { userId } = verifyAccessToken(header.split(" ")[1]);
+    const { userId, scope } = verifyAccessToken(header.split(" ")[1]);
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -37,6 +37,7 @@ export const authenticate = async (
       role: user.role,
       isEmailVerified: user.isEmailVerified,
       storeId: user.store?.id,
+      scope,
     };
 
     next();

@@ -42,7 +42,8 @@ export const authPaths = {
     post: {
       tags,
       summary: 'Rotate tokens',
-      description: 'Uses the refresh-token cookie (or body) to issue a new access token and rotate the refresh token.',
+      description:
+        'Uses the per-app refresh-token cookie (rt_web | rt_seller | rt_admin, selected by the request Origin) to issue a new access token and rotate the refresh token. The token must have been minted for the calling app.',
       responses: { 200: ok({ type: 'object', properties: { accessToken: { type: 'string' } } }), 401: E[401] },
     },
   },

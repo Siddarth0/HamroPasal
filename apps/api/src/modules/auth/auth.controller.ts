@@ -1,8 +1,9 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { asyncHandler } from '@/shared/utils/async-handler';
 import { ApiResponse } from '@/shared/utils/api-response';
 import { ApiError } from '@/shared/utils/api-error';
 import { env } from '@/config/env';
+import type { Audience } from '@/shared/utils/jwt';
 import {
   registerUser,
   loginUser,
@@ -25,7 +26,6 @@ import {
   changePasswordSchema,
 } from './auth.validation';
 
-const REFRESH_COOKIE = 'refreshToken';
 const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 const refreshCookieOptions = {
@@ -35,8 +35,24 @@ const refreshCookieOptions = {
   path: '/',
 };
 
-const setRefreshCookie = (res: Response, token: string): void => {
-  res.cookie(REFRESH_COOKIE, token, {
+// Per-app cookie name so the three front-ends don't share one refresh token.
+const cookieName = (scope: Audience): string => `rt_${scope}`;
+
+// Map the (browser-set, unspoofable) Origin to an app audience. Unknown/missing
+// origin → 'web' (least privilege), so a stray request can never act as admin.
+const ORIGIN_TO_AUDIENCE: Record<string, Audience> = {
+  [env.CLIENT_URL]: 'web',
+  [env.SELLER_URL]: 'seller',
+  [env.ADMIN_URL]: 'admin',
+};
+
+const audienceFromRequest = (req: Request): Audience => {
+  const origin = typeof req.headers.origin === 'string' ? req.headers.origin : '';
+  return ORIGIN_TO_AUDIENCE[origin] ?? 'web';
+};
+
+const setRefreshCookie = (res: Response, token: string, scope: Audience): void => {
+  res.cookie(cookieName(scope), token, {
     ...refreshCookieOptions,
     maxAge: REFRESH_COOKIE_MAX_AGE,
   });
@@ -45,9 +61,10 @@ const setRefreshCookie = (res: Response, token: string): void => {
 //-----Register----------
 export const register = asyncHandler(async (req, res) => {
   const data = registerSchema.parse(req.body);
-  const { user, accessToken, refreshToken } = await registerUser(data);
+  const scope = audienceFromRequest(req);
+  const { user, accessToken, refreshToken } = await registerUser(data, scope);
 
-  setRefreshCookie(res, refreshToken);
+  setRefreshCookie(res, refreshToken, scope);
   ApiResponse.created(
     res,
     { user, accessToken },
@@ -58,20 +75,22 @@ export const register = asyncHandler(async (req, res) => {
 //-----Login----------
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = loginSchema.parse(req.body);
-  const { user, accessToken, refreshToken } = await loginUser(email, password);
+  const scope = audienceFromRequest(req);
+  const { user, accessToken, refreshToken } = await loginUser(email, password, scope);
 
-  setRefreshCookie(res, refreshToken);
+  setRefreshCookie(res, refreshToken, scope);
   ApiResponse.success(res, { user, accessToken }, 'Login successful');
 });
 
 //-----Refresh----------
 export const refreshToken = asyncHandler(async (req, res) => {
-  const token = req.cookies?.[REFRESH_COOKIE] ?? req.body?.refreshToken;
+  const scope = audienceFromRequest(req);
+  const token = req.cookies?.[cookieName(scope)] ?? req.body?.refreshToken;
   if (!token) throw new ApiError('Refresh token not provided', 401);
 
-  const { accessToken, refreshToken: rotated } = await refreshAccessToken(token);
+  const { accessToken, refreshToken: rotated } = await refreshAccessToken(token, scope);
 
-  setRefreshCookie(res, rotated);
+  setRefreshCookie(res, rotated, scope);
   ApiResponse.success(res, { accessToken }, 'Token refreshed');
 });
 
@@ -116,8 +135,8 @@ export const submitPasswordReset = asyncHandler(async (req, res) => {
   const { email, otp, password } = resetPasswordSchema.parse(req.body);
   await resetPassword(email, otp, password);
 
-  // Reset revokes the session — clear the now-stale refresh cookie.
-  res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
+  // Reset revokes all sessions — clear this app's now-stale refresh cookie.
+  res.clearCookie(cookieName(audienceFromRequest(req)), refreshCookieOptions);
   ApiResponse.success(res, undefined, 'Password reset successfully. Please log in.');
 });
 
@@ -126,16 +145,17 @@ export const changeMyPassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
   await changePassword(req.user!.userId, currentPassword, newPassword);
 
-  // Session was revoked — clear the now-stale refresh cookie.
-  res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
+  // Sessions were revoked — clear this app's now-stale refresh cookie.
+  res.clearCookie(cookieName(audienceFromRequest(req)), refreshCookieOptions);
   ApiResponse.success(res, undefined, 'Password changed. Please log in again.');
 });
 
 //-----Logout----------
 export const logout = asyncHandler(async (req, res) => {
-  if (req.user) await logoutUser(req.user.userId);
+  const scope = audienceFromRequest(req);
+  if (req.user) await logoutUser(req.user.userId, scope);
 
-  res.clearCookie(REFRESH_COOKIE, refreshCookieOptions);
+  res.clearCookie(cookieName(scope), refreshCookieOptions);
   ApiResponse.success(res, undefined, 'Logged out successfully');
 });
 
@@ -146,8 +166,9 @@ export const logout = asyncHandler(async (req, res) => {
 export const googleCallback = asyncHandler(async (req, res) => {
   if (!req.user) throw new ApiError('Google authentication failed', 401);
 
-  const { accessToken, refreshToken } = await createSession(req.user.userId);
-  setRefreshCookie(res, refreshToken);
+  // Google OAuth is the customer storefront flow → always the 'web' audience.
+  const { accessToken, refreshToken } = await createSession(req.user.userId, 'web');
+  setRefreshCookie(res, refreshToken, 'web');
 
   res.redirect(`${env.CLIENT_URL}/auth/callback?accessToken=${accessToken}`);
 });
