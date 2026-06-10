@@ -16,6 +16,19 @@ export const questionsPaths = {
       responses: { 200: okList(ref('Question')) },
     },
   },
+  '/questions/seller': {
+    get: {
+      tags,
+      summary: "List questions across the seller's products (SELLER)",
+      security: bearer,
+      parameters: [
+        { name: 'answered', in: 'query', schema: { type: 'boolean' }, description: 'Filter by answered state' },
+        { name: 'page', in: 'query', schema: { type: 'integer' } },
+        { name: 'limit', in: 'query', schema: { type: 'integer' } },
+      ],
+      responses: { 200: okList(ref('Question')), 401: E[401], 403: E[403] },
+    },
+  },
   '/questions': {
     post: {
       tags,
