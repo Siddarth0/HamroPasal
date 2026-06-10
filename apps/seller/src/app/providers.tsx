@@ -1,0 +1,25 @@
+'use client';
+
+import { useState, type ReactNode } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from '@/features/auth/auth-provider';
+import { SocketProvider } from '@/features/realtime/socket-provider';
+
+export function Providers({ children }: { children: ReactNode }) {
+  const [client] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { staleTime: 60_000, refetchOnWindowFocus: false, retry: 1 },
+        },
+      }),
+  );
+
+  return (
+    <QueryClientProvider client={client}>
+      <AuthProvider>
+        <SocketProvider>{children}</SocketProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
