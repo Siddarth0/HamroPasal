@@ -1,8 +1,19 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { env } from '@/config/env';
 import { otpEmailTemplate } from './email.templates';
 
-const resend = new Resend(env.RESEND_API_KEY);
+// NOTE: Previously used the Resend SDK. Switched to SMTP (nodemailer) so emails
+// can be sent from a personal Gmail via an App Password. Configure SMTP_HOST,
+// SMTP_PORT, SMTP_USER, SMTP_PASS and EMAIL_FROM in your env.
+//
+// Gmail: SMTP_HOST=smtp.gmail.com, SMTP_PORT=465, SMTP_USER=<you>@gmail.com,
+// SMTP_PASS=<16-char Google App Password>, EMAIL_FROM=<you>@gmail.com
+const transporter = nodemailer.createTransport({
+  host: env.SMTP_HOST,
+  port: env.SMTP_PORT,
+  secure: env.SMTP_PORT === 465, // 465 = implicit TLS; 587 = STARTTLS
+  auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
+});
 
 interface EmailOptions {
   to: string;
@@ -11,15 +22,19 @@ interface EmailOptions {
 }
 
 export const sendEmail = async (options: EmailOptions): Promise<void> => {
+  // No SMTP credentials → skip silently (dev/local without mail set up).
+  if (!env.SMTP_USER || !env.SMTP_PASS) {
+    console.warn(`✉️  SMTP not configured — skipping email to ${options.to}`);
+    return;
+  }
+
   try {
-    const { error } = await resend.emails.send({
-      from: env.EMAIL_FROM,
+    await transporter.sendMail({
+      from: env.EMAIL_FROM || env.SMTP_USER,
       to: options.to,
       subject: options.subject,
       html: options.html,
     });
-
-    if (error) console.error('❌ Email send failed:', error);
   } catch (err) {
     console.error('❌ Email send failed:', err);
   }
