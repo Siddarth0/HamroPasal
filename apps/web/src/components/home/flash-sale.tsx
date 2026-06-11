@@ -1,51 +1,94 @@
 'use client';
 
-import { Zap, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { flashSale, mockToCard } from '@/lib/mock';
 import { ProductCard } from './product-card';
 import { useProducts } from '@/features/catalog/hooks';
 import { productToCard } from '@/features/catalog/api';
 
-const timer = ['08', '17', '56'];
+/** Live countdown to the end of the current day (resets the "flash" each day). */
+function useEndOfDayCountdown() {
+  const [parts, setParts] = useState<string[]>(['00', '00', '00']);
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const end = new Date(now);
+      end.setHours(23, 59, 59, 999);
+      let diff = Math.max(0, Math.floor((end.getTime() - now.getTime()) / 1000));
+      const h = Math.floor(diff / 3600);
+      diff %= 3600;
+      const m = Math.floor(diff / 60);
+      const s = diff % 60;
+      setParts([h, m, s].map((n) => String(n).padStart(2, '0')));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return parts;
+}
 
 export function FlashSale() {
-  const { data } = useProducts({ sort: 'popular', limit: 5 });
+  const { data } = useProducts({ sort: 'popular', limit: 10 });
   const live = data?.items ?? [];
   const products = live.length ? live.map(productToCard) : flashSale.map(mockToCard);
+  const countdown = useEndOfDayCountdown();
+  const scroller = useRef<HTMLDivElement>(null);
+
+  const scroll = (dir: -1 | 1) => {
+    scroller.current?.scrollBy({ left: dir * scroller.current.clientWidth * 0.85, behavior: 'smooth' });
+  };
 
   return (
     <section className="container mt-8">
-      <div className="rounded-2xl bg-background p-5 md:p-6">
+      <div className="overflow-hidden rounded-2xl border border-border bg-background p-5 md:p-6">
         <div className="mb-5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-brand text-brand-foreground">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-brand text-brand-foreground shadow-md shadow-brand/30">
               <Zap className="h-4 w-4 fill-current" />
             </span>
             <h2 className="font-display text-xl font-bold">Flash Sale</h2>
+            <span className="hidden text-sm text-muted-foreground sm:inline">Ends in</span>
             <div className="flex items-center gap-1">
-              {timer.map((t, i) => (
-                <span key={t} className="flex items-center gap-1">
-                  <span className="grid h-7 min-w-7 place-items-center rounded-full bg-brand px-1.5 text-xs font-semibold tabular-nums text-brand-foreground">
+              {countdown.map((t, i) => (
+                <span key={i} className="flex items-center gap-1">
+                  <span className="grid h-7 min-w-7 place-items-center rounded-lg bg-navy px-1.5 text-xs font-semibold tabular-nums text-white">
                     {t}
                   </span>
-                  {i < timer.length - 1 && <span className="font-bold text-brand">:</span>}
+                  {i < countdown.length - 1 && <span className="font-bold text-brand">:</span>}
                 </span>
               ))}
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="grid h-9 w-9 place-items-center rounded-lg border border-border transition-colors hover:bg-muted">
-              <ArrowLeft className="h-4 w-4" />
+            <button
+              onClick={() => scroll(-1)}
+              aria-label="Scroll left"
+              className="grid h-9 w-9 place-items-center rounded-lg border border-border transition-colors hover:bg-muted"
+            >
+              <ChevronLeft className="h-4 w-4" />
             </button>
-            <button className="grid h-9 w-9 place-items-center rounded-lg bg-brand text-brand-foreground transition-colors hover:bg-brand/90">
-              <ArrowRight className="h-4 w-4" />
+            <button
+              onClick={() => scroll(1)}
+              aria-label="Scroll right"
+              className="grid h-9 w-9 place-items-center rounded-lg bg-brand text-brand-foreground transition-colors hover:bg-brand/90"
+            >
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        <div className="no-scrollbar grid auto-cols-[minmax(190px,1fr)] grid-flow-col gap-4 overflow-x-auto md:grid-flow-row md:auto-cols-auto md:grid-cols-5">
+        <div
+          ref={scroller}
+          className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-1"
+        >
           {products.map((p) => (
-            <ProductCard key={p.id} product={p} mode="flash" />
+            <div key={p.id} className="w-[46%] shrink-0 snap-start sm:w-[220px]">
+              <ProductCard product={p} mode="flash" />
+            </div>
           ))}
         </div>
       </div>
