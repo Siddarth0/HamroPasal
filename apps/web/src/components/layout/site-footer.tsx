@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Facebook, Twitter, Youtube, Instagram, Truck, ShieldCheck, RotateCcw } from 'lucide-react';
+import { Facebook, Twitter, Youtube, Instagram } from 'lucide-react';
 import { Logo } from './logo';
 
 const columns: { title: string; links: { label: string; href: string }[] }[] = [
@@ -43,31 +43,11 @@ const columns: { title: string; links: { label: string; href: string }[] }[] = [
 
 const socials = [Facebook, Twitter, Youtube, Instagram];
 
-const trust = [
-  { icon: Truck, label: 'Nationwide delivery' },
-  { icon: ShieldCheck, label: 'Secure payments' },
-  { icon: RotateCcw, label: 'Easy returns' },
-];
-
 const payments = ['COD', 'Khalti', 'eSewa', 'Visa', 'Mastercard'];
 
 export function SiteFooter() {
   return (
     <footer className="mt-12 bg-footer text-footer-foreground">
-      {/* Trust strip */}
-      <div className="border-b border-white/10">
-        <div className="container grid grid-cols-1 gap-4 py-6 sm:grid-cols-3">
-          {trust.map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center justify-center gap-3 sm:justify-start">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-brand/15 text-brand">
-                <Icon className="h-5 w-5" />
-              </span>
-              <span className="text-sm font-medium text-white/80">{label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
       <div className="container grid grid-cols-2 gap-8 py-12 md:grid-cols-6">
         <div className="col-span-2">
           <Logo dark />
