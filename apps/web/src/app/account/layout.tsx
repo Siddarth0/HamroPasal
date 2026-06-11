@@ -38,7 +38,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
     <div className="container py-8">
       <div className="grid gap-6 lg:grid-cols-[230px_1fr]">
         <aside className="lg:sticky lg:top-20 lg:self-start">
-          <nav className="space-y-1">
+          <nav className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 lg:mx-0 lg:flex-col lg:gap-1 lg:overflow-visible lg:px-0">
             {nav.map(({ href, label, icon: Icon }) => {
               const active = pathname === href;
               return (
@@ -46,8 +46,10 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                   key={href}
                   href={href}
                   className={cn(
-                    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors',
-                    active ? 'bg-brand/10 font-medium text-brand' : 'text-foreground/80 hover:bg-muted',
+                    'flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm transition-colors lg:gap-3',
+                    active
+                      ? 'bg-brand/10 font-medium text-brand'
+                      : 'bg-muted text-foreground/80 hover:bg-muted lg:bg-transparent',
                   )}
                 >
                   <Icon className="h-4 w-4" />

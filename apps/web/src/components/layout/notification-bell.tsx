@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,7 +11,23 @@ import { cn } from '@/lib/utils';
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
+
+  // Close on outside click / Escape (robust across stacking contexts).
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onEsc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [open]);
   const unread = useUnreadCount();
   const { data } = useNotifications();
   const items = (data?.items ?? []).slice(0, 6);
@@ -23,7 +39,7 @@ export function NotificationBell() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <Button variant="ghost" size="icon" aria-label="Notifications" onClick={() => setOpen((o) => !o)}>
         <Bell className="h-5 w-5" />
       </Button>
@@ -35,13 +51,7 @@ export function NotificationBell() {
 
       {open && (
         <>
-          <button
-            aria-hidden
-            tabIndex={-1}
-            onClick={() => setOpen(false)}
-            className="fixed inset-0 z-40 cursor-default"
-          />
-          <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+          <div className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
             <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
               <span className="text-sm font-semibold">Notifications</span>
               {items.some((n) => !n.isRead) && (

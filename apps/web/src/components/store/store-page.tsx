@@ -106,9 +106,9 @@ export function StorePage({ slug }: { slug: string }) {
         ) : (
           <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand/20 blur-3xl" />
         )}
-        <div className="relative flex flex-col gap-4 p-6 text-white sm:flex-row sm:items-center sm:justify-between md:p-8">
-          <div className="flex items-center gap-4">
-            <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-brand font-display text-2xl font-bold text-brand-foreground">
+        <div className="relative flex flex-col gap-4 p-5 text-white sm:flex-row sm:items-center sm:justify-between md:p-8">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-brand font-display text-xl font-bold text-brand-foreground sm:h-16 sm:w-16 sm:rounded-2xl sm:text-2xl">
               {store.logoUrl ? (
                 <Image src={store.logoUrl} alt={store.name} fill className="object-cover" sizes="64px" />
               ) : (
@@ -116,7 +116,7 @@ export function StorePage({ slug }: { slug: string }) {
               )}
             </span>
             <div>
-              <h1 className="flex items-center gap-2 font-display text-2xl font-bold">
+              <h1 className="flex items-center gap-2 font-display text-xl font-bold sm:text-2xl">
                 {store.name}
                 <BadgeCheck className="h-5 w-5 text-brand" />
               </h1>
@@ -142,7 +142,7 @@ export function StorePage({ slug }: { slug: string }) {
           </div>
           <button
             onClick={onChat}
-            className="inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold backdrop-blur transition-colors hover:bg-white/20"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold backdrop-blur transition-colors hover:bg-white/20 sm:w-fit"
           >
             <MessageCircle className="h-4 w-4" /> Chat with seller
           </button>
