@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/auth';
 import { useChatUI } from '@/store/chat-ui';
 import { Button } from '@/components/ui/button';
 import { ProductTabs } from './product-tabs';
+import { VariantPicker } from './variant-picker';
 import { cn, formatPrice } from '@/lib/utils';
 import { getApiErrorMessage } from '@/lib/api';
 
@@ -28,6 +29,7 @@ export function ProductDetail({ slug }: { slug: string }) {
 
   const [activeImage, setActiveImage] = useState(0);
   const [variant, setVariant] = useState<ApiVariant | null>(null);
+  const [needsSelection, setNeedsSelection] = useState(false);
   const [qty, setQty] = useState(1);
   const [addState, setAddState] = useState<'idle' | 'adding' | 'added' | 'error'>('idle');
   const [addMsg, setAddMsg] = useState<string | null>(null);
@@ -62,16 +64,32 @@ export function ProductDetail({ slug }: { slug: string }) {
     );
   }
 
-  const price = variant?.price ?? product.price;
-  const comparePrice = variant?.comparePrice ?? product.comparePrice;
+  // Option-based product: has attribute axes (Color/Size/RAM…) + matching variants.
+  const hasOptions = (product.attributes?.length ?? 0) > 0 && product.variants.length > 0;
+  const variantPrices = product.variants.map((v) => v.price);
+  const minV = variantPrices.length ? Math.min(...variantPrices) : product.price;
+  const maxV = variantPrices.length ? Math.max(...variantPrices) : product.price;
+
+  const price = variant?.price ?? (hasOptions ? minV : product.price);
+  const comparePrice = variant?.comparePrice ?? (hasOptions ? undefined : product.comparePrice);
+  const showRange = hasOptions && !variant && minV !== maxV;
   const stock = variant ? variant.stock : product.stock;
-  const inStock = stock > 0;
+  const inStock = variant
+    ? variant.stock > 0
+    : hasOptions
+      ? product.variants.some((v) => v.stock > 0)
+      : product.stock > 0;
+  const canAdd = inStock && (!hasOptions || !!variant);
   const discount = comparePrice && comparePrice > price ? Math.round((1 - price / comparePrice) * 100) : 0;
   const category = typeof product.categoryId === 'object' ? product.categoryId : null;
 
   const onAdd = async () => {
     if (status !== 'authenticated') {
       router.push(`/login?returnUrl=${encodeURIComponent(`/product/${slug}`)}`);
+      return;
+    }
+    if (hasOptions && !variant) {
+      setNeedsSelection(true);
       return;
     }
     setAddState('adding');
@@ -146,7 +164,9 @@ export function ProductDetail({ slug }: { slug: string }) {
           </div>
 
           <div className="mt-5 flex items-end gap-3">
-            <span className="font-display text-3xl font-bold text-brand">{formatPrice(price)}</span>
+            <span className="font-display text-3xl font-bold text-brand">
+              {showRange ? `${formatPrice(minV)} – ${formatPrice(maxV)}` : formatPrice(price)}
+            </span>
             {comparePrice && comparePrice > price && (
               <span className="pb-1 text-sm text-muted-foreground line-through">{formatPrice(comparePrice)}</span>
             )}
@@ -157,31 +177,58 @@ export function ProductDetail({ slug }: { slug: string }) {
             )}
           </div>
 
-          <p className={cn('mt-2 text-sm', inStock ? 'text-green-600' : 'text-brand')}>
-            {inStock ? `In stock (${stock} available)` : 'Out of stock'}
+          <p
+            className={cn(
+              'mt-2 text-sm',
+              !inStock ? 'text-brand' : variant || !hasOptions ? 'text-green-600' : 'text-muted-foreground',
+            )}
+          >
+            {!inStock
+              ? 'Out of stock'
+              : variant
+                ? `In stock (${stock} available)`
+                : hasOptions
+                  ? 'Select options to see availability'
+                  : `In stock (${stock} available)`}
           </p>
 
-          {product.variants.length > 0 && (
-            <div className="mt-5">
-              <p className="mb-2 text-sm font-medium">Options</p>
-              <div className="flex flex-wrap gap-2">
-                {product.variants.map((v) => (
-                  <button
-                    key={v._id}
-                    onClick={() => setVariant((cur) => (cur?._id === v._id ? null : v))}
-                    disabled={v.stock <= 0}
-                    className={cn(
-                      'rounded-full border px-4 py-2 text-sm transition-colors disabled:opacity-40',
-                      variant?._id === v._id
-                        ? 'border-brand bg-brand text-brand-foreground'
-                        : 'border-border hover:bg-muted',
-                    )}
-                  >
-                    {v.name}
-                  </button>
-                ))}
+          {hasOptions ? (
+            <>
+              <VariantPicker
+                attributes={product.attributes}
+                variants={product.variants}
+                onChange={(v) => {
+                  setVariant(v);
+                  if (v) setNeedsSelection(false);
+                }}
+              />
+              {needsSelection && (
+                <p className="mt-2 text-sm font-medium text-brand">Please select an option first.</p>
+              )}
+            </>
+          ) : (
+            product.variants.length > 0 && (
+              <div className="mt-5">
+                <p className="mb-2 text-sm font-medium">Options</p>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants.map((v) => (
+                    <button
+                      key={v._id}
+                      onClick={() => setVariant((cur) => (cur?._id === v._id ? null : v))}
+                      disabled={v.stock <= 0}
+                      className={cn(
+                        'rounded-full border px-4 py-2 text-sm transition-colors disabled:opacity-40',
+                        variant?._id === v._id
+                          ? 'border-brand bg-brand text-brand-foreground'
+                          : 'border-border hover:bg-muted',
+                      )}
+                    >
+                      {v.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )
           )}
 
           {/* Quantity + actions */}
@@ -208,7 +255,7 @@ export function ProductDetail({ slug }: { slug: string }) {
               variant="brand"
               size="lg"
               onClick={onAdd}
-              disabled={!inStock || addState === 'adding'}
+              disabled={!canAdd || addState === 'adding'}
               className="gap-2"
             >
               {addState === 'added' ? (

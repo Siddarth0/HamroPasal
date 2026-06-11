@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, Wand2 } from 'lucide-react';
 import type { ApiProduct, ApiVariant, ApiAttribute, ProductInput } from '@/features/products/api';
 import { useCreateProduct, useUpdateProduct } from '@/features/products/hooks';
 import { fetchCategories } from '@/features/categories/api';
@@ -44,6 +44,25 @@ const toVariantDraft = (v: ApiVariant): VariantDraft => ({
   attrs: Object.entries(v.attributes ?? {}).map(([key, value]) => ({ key, value })),
 });
 
+/** Parse the option editor rows into clean { name, values[] } axes. */
+const parseOptions = (rows: { name: string; values: string }[]) =>
+  rows
+    .map((a) => ({
+      name: a.name.trim(),
+      values: a.values.split(',').map((v) => v.trim()).filter(Boolean),
+    }))
+    .filter((a) => a.name && a.values.length > 0);
+
+/** Cartesian product of option axes → one attribute map per combination. */
+const cartesian = (axes: { name: string; values: string[] }[]): Record<string, string>[] =>
+  axes.reduce<Record<string, string>[]>(
+    (acc, axis) => acc.flatMap((combo) => axis.values.map((val) => ({ ...combo, [axis.name]: val }))),
+    [{}],
+  );
+
+const comboKey = (attrs: { key: string; value: string }[]) =>
+  [...attrs].sort((a, b) => a.key.localeCompare(b.key)).map((a) => `${a.key}=${a.value}`).join('|');
+
 export function ProductForm({ product }: { product?: ApiProduct }) {
   const router = useRouter();
   const isEdit = !!product;
@@ -73,6 +92,29 @@ export function ProductForm({ product }: { product?: ApiProduct }) {
   const [done, setDone] = useState(false);
 
   const saving = create.isPending || update.isPending;
+
+  // Build a variant row per option combination (merging, skipping existing combos).
+  const generateVariants = () => {
+    const axes = parseOptions(attributes);
+    if (!axes.length) {
+      setError('Add at least one option (e.g. Size) with values before generating variants.');
+      return;
+    }
+    setError(null);
+    setVariants((cur) => {
+      const existing = new Set(cur.map((v) => comboKey(v.attrs)));
+      const additions = cartesian(axes)
+        .map((combo) => Object.entries(combo).map(([key, value]) => ({ key, value })))
+        .filter((attrs) => !existing.has(comboKey(attrs)))
+        .map((attrs) => ({
+          ...emptyVariant(),
+          name: attrs.map((a) => a.value).join(' / '),
+          price: price || '',
+          attrs,
+        }));
+      return [...cur, ...additions];
+    });
+  };
 
   const buildPayload = (): ProductInput | null => {
     if (!name.trim() || name.trim().length < 2) {
@@ -271,44 +313,46 @@ export function ProductForm({ product }: { product?: ApiProduct }) {
         </CardContent>
       </Card>
 
-      {/* Attributes */}
+      {/* Options */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Attributes</CardTitle>
+          <div>
+            <CardTitle>Options</CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Define choices like Size, Color or RAM — then generate a variant for each combination.
+            </p>
+          </div>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => setAttributes((a) => [...a, { name: '', values: '' }])}
           >
-            <Plus className="h-4 w-4" /> Add
+            <Plus className="h-4 w-4" /> Add option
           </Button>
         </CardHeader>
         <CardContent className="space-y-3">
           {attributes.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              Optional. e.g. Color → Red, Blue · Size → S, M, L
+              No options — this is a simple product using the base price &amp; stock above. Add an
+              option (e.g. Size → S, M, L) for size/color/storage variants.
             </p>
           )}
           {attributes.map((attr, i) => (
             <div key={i} className="flex gap-2">
               <Input
-                placeholder="Name (e.g. Color)"
+                placeholder="Option (e.g. Size)"
                 value={attr.name}
                 onChange={(e) =>
-                  setAttributes((a) =>
-                    a.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)),
-                  )
+                  setAttributes((a) => a.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
                 }
                 className="w-1/3"
               />
               <Input
-                placeholder="Values, comma separated"
+                placeholder="Values, comma separated (e.g. S, M, L)"
                 value={attr.values}
                 onChange={(e) =>
-                  setAttributes((a) =>
-                    a.map((x, j) => (j === i ? { ...x, values: e.target.value } : x)),
-                  )
+                  setAttributes((a) => a.map((x, j) => (j === i ? { ...x, values: e.target.value } : x)))
                 }
               />
               <Button
@@ -321,49 +365,73 @@ export function ProductForm({ product }: { product?: ApiProduct }) {
               </Button>
             </div>
           ))}
+          {attributes.length > 0 && (
+            <Button type="button" variant="secondary" size="sm" onClick={generateVariants}>
+              <Wand2 className="h-4 w-4" /> Generate variants from options
+            </Button>
+          )}
         </CardContent>
       </Card>
 
       {/* Variants */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Variants</CardTitle>
+          <div>
+            <CardTitle>Variants</CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Each variant has its own price &amp; stock. Shoppers pick options to buy one.
+            </p>
+          </div>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => setVariants((v) => [...v, emptyVariant()])}
           >
-            <Plus className="h-4 w-4" /> Add
+            <Plus className="h-4 w-4" /> Add manual
           </Button>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {variants.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              Optional. Add variants (e.g. &quot;Red / Large&quot;) with their own price &amp; stock.
+              No variants — the product sells on its base price &amp; stock.
             </p>
           )}
           {variants.map((v, i) => (
-            <div key={i} className="rounded-xl border border-border p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm font-semibold">Variant {i + 1}</p>
+            <div key={i} className="rounded-xl border border-border p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                {v.attrs.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {v.attrs.map((a) => (
+                      <span
+                        key={a.key}
+                        className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium"
+                      >
+                        <span className="text-muted-foreground">{a.key}:</span> {a.value}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <Input
+                    placeholder="Variant name"
+                    value={v.name}
+                    onChange={(e) =>
+                      setVariants((vs) => vs.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
+                    }
+                    className="h-9 max-w-[16rem]"
+                  />
+                )}
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   onClick={() => setVariants((vs) => vs.filter((_, j) => j !== i))}
+                  aria-label="Remove variant"
                 >
                   <Trash2 className="h-4 w-4 text-red-600" />
                 </Button>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <Input
-                  placeholder="Variant name"
-                  value={v.name}
-                  onChange={(e) =>
-                    setVariants((vs) => vs.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
-                  }
-                />
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 <Input
                   type="number"
                   min="0"
@@ -371,9 +439,7 @@ export function ProductForm({ product }: { product?: ApiProduct }) {
                   placeholder="Price"
                   value={v.price}
                   onChange={(e) =>
-                    setVariants((vs) =>
-                      vs.map((x, j) => (j === i ? { ...x, price: e.target.value } : x)),
-                    )
+                    setVariants((vs) => vs.map((x, j) => (j === i ? { ...x, price: e.target.value } : x)))
                   }
                 />
                 <Input
@@ -383,16 +449,14 @@ export function ProductForm({ product }: { product?: ApiProduct }) {
                   placeholder="Stock"
                   value={v.stock}
                   onChange={(e) =>
-                    setVariants((vs) =>
-                      vs.map((x, j) => (j === i ? { ...x, stock: e.target.value } : x)),
-                    )
+                    setVariants((vs) => vs.map((x, j) => (j === i ? { ...x, stock: e.target.value } : x)))
                   }
                 />
                 <Input
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="Compare-at (optional)"
+                  placeholder="Compare-at"
                   value={v.comparePrice}
                   onChange={(e) =>
                     setVariants((vs) =>
@@ -401,7 +465,7 @@ export function ProductForm({ product }: { product?: ApiProduct }) {
                   }
                 />
                 <Input
-                  placeholder="SKU (optional)"
+                  placeholder="SKU"
                   value={v.sku}
                   onChange={(e) =>
                     setVariants((vs) => vs.map((x, j) => (j === i ? { ...x, sku: e.target.value } : x)))
