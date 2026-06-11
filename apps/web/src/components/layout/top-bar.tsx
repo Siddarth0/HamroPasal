@@ -5,8 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Smartphone } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { logout as logoutApi } from '@/features/auth/api';
+import { SELLER_URL } from '@/lib/links';
 
-const navLinks = ['Sell on HamroPasal', 'About Us', 'Help Center', 'Promo'];
+const navLinks: { label: string; href: string; external?: boolean }[] = [
+  { label: 'Sell on HamroPasal', href: SELLER_URL, external: true },
+  { label: 'About Us', href: '/about' },
+  { label: 'Help Center', href: '/help' },
+  { label: 'Promo', href: '/products?sort=popular' },
+];
 
 export function TopBar() {
   const router = useRouter();
@@ -29,16 +35,22 @@ export function TopBar() {
   return (
     <div className="hidden border-b border-border bg-background md:block">
       <div className="container flex h-9 items-center justify-between text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
+        <Link href="/download" className="flex items-center gap-1.5 hover:text-foreground">
           <Smartphone className="h-3.5 w-3.5" />
           Download the HamroPasal App
-        </span>
+        </Link>
         <nav className="flex items-center gap-5">
-          {navLinks.map((l) => (
-            <Link key={l} href="#" className="hover:text-foreground">
-              {l}
-            </Link>
-          ))}
+          {navLinks.map((l) =>
+            l.external ? (
+              <a key={l.label} href={l.href} className="hover:text-foreground">
+                {l.label}
+              </a>
+            ) : (
+              <Link key={l.label} href={l.href} className="hover:text-foreground">
+                {l.label}
+              </Link>
+            ),
+          )}
           <span className="text-border">|</span>
 
           {status === 'authenticated' ? (

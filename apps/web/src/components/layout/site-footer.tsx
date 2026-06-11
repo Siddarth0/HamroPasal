@@ -1,42 +1,45 @@
 import Link from 'next/link';
-import { Facebook, Twitter, Youtube, Instagram } from 'lucide-react';
+import { Facebook, Twitter, Youtube, Instagram, Smartphone } from 'lucide-react';
 import { Logo } from './logo';
+import { SELLER_URL } from '@/lib/links';
 
-const columns: { title: string; links: { label: string; href: string }[] }[] = [
+type FooterLink = { label: string; href: string; external?: boolean };
+
+const columns: { title: string; links: FooterLink[] }[] = [
   {
     title: 'HamroPasal',
     links: [
-      { label: 'About Us', href: '#' },
-      { label: 'Careers', href: '#' },
-      { label: 'Blog', href: '#' },
-      { label: 'Press', href: '#' },
+      { label: 'About Us', href: '/about' },
+      { label: 'Careers', href: '/about' },
+      { label: 'Blog', href: '/about' },
+      { label: 'Press', href: '/about' },
     ],
   },
   {
     title: 'Buy',
     links: [
-      { label: 'How to Buy', href: '#' },
-      { label: 'Payment Options', href: '#' },
-      { label: 'Cash on Delivery', href: '#' },
+      { label: 'How to Buy', href: '/help' },
+      { label: 'Payment Options', href: '/help' },
+      { label: 'Cash on Delivery', href: '/help' },
       { label: 'Track Your Order', href: '/account/orders' },
     ],
   },
   {
     title: 'Sell',
     links: [
-      { label: 'Sell on HamroPasal', href: '#' },
-      { label: 'Seller Center', href: '#' },
-      { label: 'Become a Seller', href: '#' },
-      { label: 'Seller Help', href: '#' },
+      { label: 'Sell on HamroPasal', href: SELLER_URL, external: true },
+      { label: 'Seller Center', href: SELLER_URL, external: true },
+      { label: 'Become a Seller', href: SELLER_URL, external: true },
+      { label: 'Seller Help', href: '/help' },
     ],
   },
   {
     title: 'Help',
     links: [
-      { label: 'Help Center', href: '#' },
-      { label: 'Terms & Conditions', href: '#' },
-      { label: 'Privacy Policy', href: '#' },
-      { label: 'Contact Us', href: '#' },
+      { label: 'Help Center', href: '/help' },
+      { label: 'Terms & Conditions', href: '/terms' },
+      { label: 'Privacy Policy', href: '/privacy' },
+      { label: 'Contact Us', href: '/contact' },
     ],
   },
 ];
@@ -54,6 +57,12 @@ export function SiteFooter() {
           <p className="mt-4 max-w-xs text-sm text-white/60">
             Nepal’s online marketplace — shop from thousands of trusted local sellers.
           </p>
+          <Link
+            href="/download"
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+          >
+            <Smartphone className="h-4 w-4" /> Get the app
+          </Link>
           <div className="mt-5 flex gap-3">
             {socials.map((Icon, i) => (
               <Link
@@ -73,9 +82,15 @@ export function SiteFooter() {
             <ul className="space-y-3 text-sm text-white/60">
               {col.links.map((l) => (
                 <li key={l.label}>
-                  <Link href={l.href} className="transition-colors hover:text-white">
-                    {l.label}
-                  </Link>
+                  {l.external ? (
+                    <a href={l.href} className="transition-colors hover:text-white">
+                      {l.label}
+                    </a>
+                  ) : (
+                    <Link href={l.href} className="transition-colors hover:text-white">
+                      {l.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
