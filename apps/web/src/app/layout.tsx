@@ -6,6 +6,7 @@ import { Providers } from './providers';
 import { TopBar } from '@/components/layout/top-bar';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -36,6 +37,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SiteHeader />
           <main className="min-h-screen">{children}</main>
           <SiteFooter />
+          {/* Clears the fixed mobile bottom nav so the footer isn't hidden behind it. */}
+          <div aria-hidden className="h-14 md:hidden" />
+          <MobileBottomNav />
         </Providers>
       </body>
     </html>

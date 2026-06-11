@@ -24,7 +24,7 @@ export function BackendStatus() {
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 flex max-w-[260px] items-center gap-2.5 rounded-xl border border-border bg-card px-4 py-2.5 text-xs text-muted-foreground shadow-lg">
+    <div className="fixed bottom-20 left-4 z-50 flex max-w-[260px] items-center gap-2.5 rounded-xl border border-border bg-card px-4 py-2.5 text-xs text-muted-foreground shadow-lg md:bottom-4">
       <Loader2 className="h-4 w-4 shrink-0 animate-spin text-brand" />
       <span>
         Waking up our server… the first load can take up to ~30s on free hosting.

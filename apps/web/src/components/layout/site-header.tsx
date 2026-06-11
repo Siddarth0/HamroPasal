@@ -61,7 +61,8 @@ export function SiteHeader() {
         </div>
 
         <div className="ml-auto flex items-center gap-1">
-          <Link href="/wishlist" className="relative" aria-label="Wishlist">
+          {/* Wishlist + cart live in the bottom nav on mobile to keep the header uncluttered. */}
+          <Link href="/wishlist" className="relative hidden md:block" aria-label="Wishlist">
             <Button variant="ghost" size="icon">
               <Heart className="h-5 w-5" />
             </Button>
@@ -71,7 +72,7 @@ export function SiteHeader() {
               </span>
             )}
           </Link>
-          <Link href="/cart" className="relative" aria-label="Cart">
+          <Link href="/cart" className="relative hidden md:block" aria-label="Cart">
             <Button variant="ghost" size="icon">
               <ShoppingCart className="h-5 w-5" />
             </Button>
