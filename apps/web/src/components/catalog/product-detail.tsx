@@ -295,10 +295,32 @@ export function ProductDetail({ slug }: { slug: string }) {
             <p className="mt-2 text-xs text-muted-foreground">You’ll need to log in to add items to your cart.</p>
           )}
 
-          <div className="mt-6 flex items-center gap-2 border-t border-border pt-5 text-sm text-muted-foreground">
-            <Store className="h-4 w-4" />
-            Sold by a HamroPasal seller
-          </div>
+          {product.store ? (
+            <Link
+              href={`/store/${product.store.slug}`}
+              className="mt-6 flex items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:border-brand/50 hover:bg-muted"
+            >
+              <span className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-navy text-sm font-bold text-white">
+                {product.store.logoUrl ? (
+                  <Image src={product.store.logoUrl} alt={product.store.name} fill className="object-cover" sizes="40px" />
+                ) : (
+                  product.store.name.charAt(0)
+                )}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs text-muted-foreground">Sold by</span>
+                <span className="block truncate text-sm font-semibold">{product.store.name}</span>
+              </span>
+              <span className="flex items-center gap-1 text-sm font-medium text-brand">
+                <Store className="h-4 w-4" /> Visit store
+              </span>
+            </Link>
+          ) : (
+            <div className="mt-6 flex items-center gap-2 border-t border-border pt-5 text-sm text-muted-foreground">
+              <Store className="h-4 w-4" />
+              Sold by a HamroPasal seller
+            </div>
+          )}
         </div>
       </div>
 

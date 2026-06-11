@@ -171,11 +171,17 @@ export const browseProducts = async (pagination: Pagination, filters: BrowseFilt
   return { items, meta: buildPaginationMeta(total, pagination.page, pagination.limit) };
 };
 
-export const getProductBySlug = async (slug: string) => {
-  const product = await Product.findOne({ slug, isActive: true, storeActive: true }).populate(
-    'categoryId',
-    'name slug',
-  );
+export const getProductBySlug = async (slug: string): Promise<Record<string, unknown>> => {
+  const product = await Product.findOne({ slug, isActive: true, storeActive: true })
+    .populate('categoryId', 'name slug')
+    .lean();
   if (!product) throw new ApiError('Product not found', 404);
-  return product;
+
+  // Attach the seller store (Postgres) so the detail page can link to it.
+  const store = await prisma.store.findUnique({
+    where: { id: product.storeId },
+    select: { id: true, name: true, slug: true, logoUrl: true },
+  });
+
+  return { ...product, store };
 };

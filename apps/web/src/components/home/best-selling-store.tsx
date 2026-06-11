@@ -14,7 +14,7 @@ function RealStoreCard({ store }: { store: ApiStore }) {
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md">
-      <div className="mb-3 flex items-center gap-3">
+      <Link href={`/store/${store.slug}`} className="mb-3 flex items-center gap-3 group/store">
         <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-navy font-display text-sm font-bold text-white">
           {store.logoUrl ? (
             <Image src={store.logoUrl} alt={store.name} width={44} height={44} className="h-full w-full object-cover" />
@@ -23,7 +23,7 @@ function RealStoreCard({ store }: { store: ApiStore }) {
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1 text-sm font-semibold">
+          <p className="flex items-center gap-1 text-sm font-semibold group-hover/store:text-brand">
             <span className="truncate">{store.name}</span>
             <BadgeCheck className="h-4 w-4 shrink-0 text-brand" />
           </p>
@@ -31,7 +31,7 @@ function RealStoreCard({ store }: { store: ApiStore }) {
             {store.description ?? 'Verified seller on HamroPasal'}
           </p>
         </div>
-      </div>
+      </Link>
       <div className="grid grid-cols-3 gap-2">
         {items.map((p) => (
           <Link

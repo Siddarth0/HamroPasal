@@ -19,6 +19,8 @@ export interface ApiProduct {
   avgRating: number;
   reviewCount: number;
   soldCount: number;
+  // raw id on browse responses; populated object on the detail endpoint
+  categoryId?: string | { _id: string; name: string; slug: string };
 }
 
 export interface ApiCategory {
@@ -34,6 +36,8 @@ export interface ApiStore {
   slug: string;
   description?: string | null;
   logoUrl?: string | null;
+  coverUrl?: string | null;
+  city?: string | null;
 }
 
 export interface ProductQuery {
@@ -87,10 +91,17 @@ export interface ApiProductDetail extends ApiProduct {
   tags: string[];
   // populated with { _id, name, slug } on the detail endpoint
   categoryId: { _id: string; name: string; slug: string } | string;
+  // the seller store (attached server-side)
+  store?: { id: string; name: string; slug: string; logoUrl?: string | null } | null;
 }
 
 export async function fetchProductBySlug(slug: string): Promise<ApiProductDetail> {
   const { data } = await api.get<ApiEnvelope<ApiProductDetail>>(`/products/${slug}`);
+  return data.data;
+}
+
+export async function fetchStoreBySlug(slug: string): Promise<ApiStore> {
+  const { data } = await api.get<ApiEnvelope<ApiStore>>(`/stores/${slug}`);
   return data.data;
 }
 

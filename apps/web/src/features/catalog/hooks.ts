@@ -5,6 +5,7 @@ import {
   fetchStores,
   fetchProductBySlug,
   fetchCategoryBySlug,
+  fetchStoreBySlug,
   type ProductQuery,
 } from './api';
 
@@ -18,6 +19,14 @@ export function useProducts(params: ProductQuery = {}) {
 
 export function useStores(params: { page?: number; limit?: number; search?: string } = {}) {
   return useQuery({ queryKey: ['stores', params], queryFn: () => fetchStores(params) });
+}
+
+export function useStoreBySlug(slug: string) {
+  return useQuery({
+    queryKey: ['store', slug],
+    queryFn: () => fetchStoreBySlug(slug),
+    enabled: !!slug,
+  });
 }
 
 export function useProduct(slug: string) {
