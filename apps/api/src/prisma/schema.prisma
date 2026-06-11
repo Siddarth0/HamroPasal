@@ -96,6 +96,7 @@ model OAuthAccount {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerId])
+  @@index([userId])
   @@map("oauth_accounts")
 }
 
@@ -116,6 +117,7 @@ model Address {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders Order[]
 
+  @@index([userId])
   @@map("addresses")
 }
 
@@ -157,6 +159,7 @@ model DeliveryZone {
 
   store  Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
+  @@index([storeId])
   @@map("delivery_zones")
 }
 
@@ -184,6 +187,9 @@ model Order {
   subOrders SubOrder[]
   payment   Payment?
 
+  @@index([userId])
+  @@index([status])
+  @@index([paymentStatus])
   @@map("orders")
 }
 
@@ -205,6 +211,9 @@ model SubOrder {
   payout     Payout?
   returns    Return[]
 
+  @@index([orderId])
+  @@index([storeId])
+  @@index([storeId, status])
   @@map("sub_orders")
 }
 
@@ -221,6 +230,7 @@ model OrderItem {
 
   subOrder SubOrder @relation(fields: [subOrderId], references: [id])
 
+  @@index([subOrderId])
   @@map("order_items")
 }
 
@@ -261,6 +271,7 @@ model Coupon {
   orders      Order[]
   redemptions CouponRedemption[]
 
+  @@index([storeId])
   @@map("coupons")
 }
 
@@ -289,6 +300,8 @@ model LoyaltyTransaction {
 
   user User @relation(fields: [userId], references: [id])
 
+  @@index([userId])
+  @@index([orderId])
   @@map("loyalty_transactions")
 }
 
@@ -306,6 +319,8 @@ model Payout {
   store    Store    @relation(fields: [storeId], references: [id])
   subOrder SubOrder @relation(fields: [subOrderId], references: [id])
 
+  @@index([storeId])
+  @@index([status])
   @@map("payouts")
 }
 
@@ -322,5 +337,7 @@ model Return {
 
   subOrder SubOrder @relation(fields: [subOrderId], references: [id])
 
+  @@index([subOrderId])
+  @@index([status])
   @@map("returns")
 }
