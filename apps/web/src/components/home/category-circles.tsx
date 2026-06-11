@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { LayoutGrid } from 'lucide-react';
 import { categories as mockCategories, img } from '@/lib/mock';
 import { useCategories } from '@/features/catalog/hooks';
+import { CategoryCircleSkeleton } from './skeletons';
 
 interface Circle {
   name: string;
@@ -13,7 +14,9 @@ interface Circle {
 }
 
 export function CategoryCircles() {
-  const { data } = useCategories();
+  const { data, isLoading } = useCategories();
+  const hasCategories = Array.isArray(data) && data.length > 0;
+  const showSkeleton = isLoading && !hasCategories;
 
   const circles: Circle[] = data?.length
     ? data.map((c) => ({
@@ -26,7 +29,10 @@ export function CategoryCircles() {
   return (
     <section className="mt-6 border-y border-border bg-background">
       <div className="container flex flex-wrap items-start justify-center gap-x-7 gap-y-5 py-6 md:justify-between">
-        {circles.map((c) => (
+        {showSkeleton &&
+          Array.from({ length: 9 }).map((_, i) => <CategoryCircleSkeleton key={i} />)}
+        {!showSkeleton &&
+          circles.map((c) => (
           <Link key={c.name} href={c.href} className="group flex w-16 flex-col items-center gap-2">
             <span className="h-14 w-14 overflow-hidden rounded-full ring-1 ring-border transition-transform group-hover:scale-105">
               <Image src={c.image} alt={c.name} width={56} height={56} className="h-full w-full object-cover" />

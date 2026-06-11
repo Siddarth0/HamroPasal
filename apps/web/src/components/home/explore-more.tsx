@@ -3,14 +3,16 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { ProductCard } from './product-card';
+import { ProductCardSkeletonRow } from './skeletons';
 import { useProducts } from '@/features/catalog/hooks';
 import { productToCard } from '@/features/catalog/api';
 
 export function ExploreMore() {
-  const { data } = useProducts({ sort: 'newest', limit: 18 });
+  const { data, isLoading } = useProducts({ sort: 'newest', limit: 18 });
   const products = (data?.items ?? []).map(productToCard);
 
-  if (products.length === 0) return null;
+  // Hide entirely only once we know there's genuinely nothing.
+  if (!isLoading && products.length === 0) return null;
 
   return (
     <section className="container mt-12">
@@ -22,9 +24,11 @@ export function ExploreMore() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {products.map((p) => (
-          <ProductCard key={p.id} product={p} mode="rating" />
-        ))}
+        {isLoading && products.length === 0 ? (
+          <ProductCardSkeletonRow count={12} />
+        ) : (
+          products.map((p) => <ProductCard key={p.id} product={p} mode="rating" />)
+        )}
       </div>
 
       <div className="mt-8 flex justify-center">

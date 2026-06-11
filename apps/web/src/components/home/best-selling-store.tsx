@@ -7,6 +7,7 @@ import { stores as mockStores, img } from '@/lib/mock';
 import { formatPrice } from '@/lib/utils';
 import { useStores, useProducts } from '@/features/catalog/hooks';
 import type { ApiStore } from '@/features/catalog/api';
+import { StoreCardSkeleton } from './skeletons';
 
 function RealStoreCard({ store }: { store: ApiStore }) {
   const { data } = useProducts({ storeId: store.id, sort: 'popular', limit: 3 });
@@ -51,7 +52,7 @@ function RealStoreCard({ store }: { store: ApiStore }) {
 }
 
 export function BestSellingStore() {
-  const { data } = useStores({ limit: 4 });
+  const { data, isLoading } = useStores({ limit: 4 });
   const liveStores = data?.items ?? [];
 
   return (
@@ -92,7 +93,9 @@ export function BestSellingStore() {
 
         {/* Real stores (fallback to mock styling if none yet) */}
         <div className="grid gap-4 sm:grid-cols-2 md:col-span-2">
-          {liveStores.length > 0
+          {isLoading && liveStores.length === 0
+            ? Array.from({ length: 4 }).map((_, i) => <StoreCardSkeleton key={i} />)
+            : liveStores.length > 0
             ? liveStores.map((s) => <RealStoreCard key={s.id} store={s} />)
             : mockStores.map((s) => (
                 <div key={s.name} className="rounded-2xl border border-border bg-card p-4">

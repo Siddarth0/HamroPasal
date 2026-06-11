@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { tabs, recommended, mockToCard } from '@/lib/mock';
 import { ProductCard } from './product-card';
+import { ProductCardSkeletonRow } from './skeletons';
 import { useProducts } from '@/features/catalog/hooks';
 import { productToCard, type ProductQuery } from '@/features/catalog/api';
 
@@ -18,8 +19,9 @@ const tabSort: NonNullable<ProductQuery['sort']>[] = [
 
 export function TodaysForYou() {
   const [active, setActive] = useState(0);
-  const { data } = useProducts({ sort: tabSort[active] ?? 'newest', limit: 12 });
+  const { data, isLoading } = useProducts({ sort: tabSort[active] ?? 'newest', limit: 12 });
   const live = data?.items ?? [];
+  const showSkeleton = isLoading && live.length === 0;
   const products = live.length ? live.map(productToCard) : recommended.map(mockToCard);
 
   return (
@@ -45,9 +47,11 @@ export function TodaysForYou() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {products.map((p) => (
-          <ProductCard key={p.id} product={p} mode="rating" />
-        ))}
+        {showSkeleton ? (
+          <ProductCardSkeletonRow count={12} />
+        ) : (
+          products.map((p) => <ProductCard key={p.id} product={p} mode="rating" />)
+        )}
       </div>
     </section>
   );

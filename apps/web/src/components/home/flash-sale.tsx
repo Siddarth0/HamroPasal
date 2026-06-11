@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { flashSale, mockToCard } from '@/lib/mock';
 import { ProductCard } from './product-card';
+import { ProductCardSkeleton } from './skeletons';
 import { useProducts } from '@/features/catalog/hooks';
 import { productToCard } from '@/features/catalog/api';
 
@@ -32,8 +33,9 @@ function useEndOfDayCountdown() {
 }
 
 export function FlashSale() {
-  const { data } = useProducts({ sort: 'popular', limit: 10 });
+  const { data, isLoading } = useProducts({ sort: 'popular', limit: 10 });
   const live = data?.items ?? [];
+  const showSkeleton = isLoading && live.length === 0;
   const products = live.length ? live.map(productToCard) : flashSale.map(mockToCard);
   const countdown = useEndOfDayCountdown();
   const scroller = useRef<HTMLDivElement>(null);
@@ -85,11 +87,17 @@ export function FlashSale() {
           ref={scroller}
           className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-1"
         >
-          {products.map((p) => (
-            <div key={p.id} className="w-[46%] shrink-0 snap-start sm:w-[220px]">
-              <ProductCard product={p} mode="flash" />
-            </div>
-          ))}
+          {showSkeleton
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="w-[46%] shrink-0 sm:w-[220px]">
+                  <ProductCardSkeleton />
+                </div>
+              ))
+            : products.map((p) => (
+                <div key={p.id} className="w-[46%] shrink-0 snap-start sm:w-[220px]">
+                  <ProductCard product={p} mode="flash" />
+                </div>
+              ))}
         </div>
       </div>
     </section>

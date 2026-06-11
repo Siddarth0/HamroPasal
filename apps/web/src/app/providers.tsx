@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/features/auth/auth-provider';
 import { SocketProvider } from '@/features/realtime/socket-provider';
 import { ChatWidget } from '@/components/chat/chat-widget';
+import { BackendStatus } from '@/components/layout/backend-status';
 
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(
@@ -22,6 +23,7 @@ export function Providers({ children }: { children: ReactNode }) {
         <SocketProvider>
           {children}
           <ChatWidget />
+          <BackendStatus />
         </SocketProvider>
       </AuthProvider>
     </QueryClientProvider>
