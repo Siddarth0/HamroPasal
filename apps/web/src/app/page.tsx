@@ -4,6 +4,7 @@ import { CategoryCircles } from '@/components/home/category-circles';
 import { FlashSale } from '@/components/home/flash-sale';
 import { TodaysForYou } from '@/components/home/todays-for-you';
 import { BestSellingStore } from '@/components/home/best-selling-store';
+import { ExploreMore } from '@/components/home/explore-more';
 import { QuoteBanner } from '@/components/home/quote-banner';
 
 export default function HomePage() {
@@ -21,6 +22,7 @@ export default function HomePage() {
       <FlashSale />
       <TodaysForYou />
       <BestSellingStore />
+      <ExploreMore />
       <QuoteBanner />
       <div className="h-6" />
     </>

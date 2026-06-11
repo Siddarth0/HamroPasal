@@ -18,7 +18,7 @@ const tabSort: NonNullable<ProductQuery['sort']>[] = [
 
 export function TodaysForYou() {
   const [active, setActive] = useState(0);
-  const { data } = useProducts({ sort: tabSort[active] ?? 'newest', limit: 8 });
+  const { data } = useProducts({ sort: tabSort[active] ?? 'newest', limit: 12 });
   const live = data?.items ?? [];
   const products = live.length ? live.map(productToCard) : recommended.map(mockToCard);
 
