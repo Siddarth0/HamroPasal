@@ -11,6 +11,7 @@ coverage
 apps/api/src/generated
 .claude
 PROGRESS.md
+DEPLOY.md
 
 # Local-only REST client request files + dev scripts
 apps/api/requests/

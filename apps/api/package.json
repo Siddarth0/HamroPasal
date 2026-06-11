@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc --project tsconfig.json",
+    "build": "prisma generate && tsc --project tsconfig.json && tsc-alias -p tsconfig.json && npm run copy:generated",
+    "copy:generated": "node -e \"require('fs').cpSync('src/generated','dist/generated',{recursive:true})\"",
     "start": "node dist/server.js",
     "type-check": "tsc --noEmit",
     "postinstall": "prisma generate",
@@ -64,6 +65,7 @@
     "@types/pg": "^8.20.0",
     "@types/web-push": "^3.6.4",
     "prisma": "^7.8.0",
+    "tsc-alias": "^1.8.10",
     "tsx": "^4.22.4",
     "typescript": "^5.8.3"
   }

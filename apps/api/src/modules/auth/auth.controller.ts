@@ -28,10 +28,14 @@ import {
 
 const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+// In production the API and front-ends live on different hosts (e.g. Render +
+// Vercel), so the cookie must be SameSite=None; Secure to ride cross-site XHR.
+// Locally we stay on Lax (http://localhost can't set Secure cookies).
+const isProd = env.NODE_ENV === 'production';
 const refreshCookieOptions = {
   httpOnly: true,
-  secure: env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
+  secure: isProd,
+  sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
   path: '/',
 };
 
