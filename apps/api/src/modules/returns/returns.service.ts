@@ -1,6 +1,7 @@
 import { prisma } from '@/config/db.postgres';
 import { ApiError } from '@/shared/utils/api-error';
 import { buildPaginationMeta, type Pagination } from '@/shared/utils/pagination';
+import { reverseOrderIncentives } from '@/modules/orders/incentives';
 import type { ReturnStatus } from '@/generated/prisma';
 
 const TRANSITIONS: Record<ReturnStatus, ReturnStatus[]> = {
@@ -128,15 +129,23 @@ export const resolveReturn = async (
       data: { status: 'FAILED' },
     });
 
-    // If every sub-order on the order is now refunded, reflect it on the order.
+    // If every sub-order on the order is now refunded, reflect it on the order
+    // and reverse its loyalty points + coupon use (whole order is void).
     const subs = await prisma.subOrder.findMany({
       where: { orderId: ret.subOrder.orderId },
       select: { status: true },
     });
     if (subs.every((s) => s.status === 'REFUNDED')) {
-      await prisma.order.update({
+      const order = await prisma.order.findUnique({
         where: { id: ret.subOrder.orderId },
-        data: { status: 'REFUNDED', paymentStatus: 'REFUNDED' },
+        select: { id: true, userId: true, totalAmount: true, loyaltyPointsUsed: true, couponId: true },
+      });
+      await prisma.$transaction(async (tx) => {
+        await tx.order.update({
+          where: { id: ret.subOrder.orderId },
+          data: { status: 'REFUNDED', paymentStatus: 'REFUNDED' },
+        });
+        if (order) await reverseOrderIncentives(tx, order, 'order refunded');
       });
     }
   }

@@ -10,7 +10,8 @@ import { createNotification } from '@/modules/notifications/notifications.servic
 import { enqueueEmail } from '@/config/queue';
 import { orderConfirmationTemplate } from '@/modules/notifications/email.templates';
 import { buildPaginationMeta, type Pagination } from '@/shared/utils/pagination';
-import type { OrderStatus, PaymentMethod } from '@/generated/prisma';
+import { reverseOrderIncentives } from './incentives';
+import type { OrderStatus, PaymentMethod, PaymentStatus } from '@/generated/prisma';
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
@@ -389,10 +390,12 @@ export const cancelMyOrder = async (userId: string, orderId: string) => {
     })),
   );
 
-  await prisma.$transaction([
-    prisma.subOrder.updateMany({ where: { orderId: order.id }, data: { status: 'CANCELLED' } }),
-    prisma.order.update({ where: { id: order.id }, data: { status: 'CANCELLED' } }),
-  ]);
+  await prisma.$transaction(async (tx) => {
+    await tx.subOrder.updateMany({ where: { orderId: order.id }, data: { status: 'CANCELLED' } });
+    await tx.order.update({ where: { id: order.id }, data: { status: 'CANCELLED' } });
+    // Undo loyalty points earned/redeemed + the coupon use for this order.
+    await reverseOrderIncentives(tx, order, 'order cancelled');
+  });
   await releaseStock(stockItems);
 
   return prisma.order.findUnique({
@@ -417,8 +420,17 @@ const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 
 // Rolls the parent order status up from its sub-orders.
 const recomputeOrderStatus = async (orderId: string): Promise<void> => {
-  const subs = await prisma.subOrder.findMany({ where: { orderId }, select: { status: true } });
-  const statuses = subs.map((s) => s.status);
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      paymentMethod: true,
+      paymentStatus: true,
+      subOrders: { select: { status: true } },
+    },
+  });
+  if (!order) return;
+
+  const statuses = order.subOrders.map((s) => s.status);
   const every = (s: OrderStatus) => statuses.every((x) => x === s);
   const some = (s: OrderStatus) => statuses.some((x) => x === s);
 
@@ -429,7 +441,19 @@ const recomputeOrderStatus = async (orderId: string): Promise<void> => {
   else if (some('PROCESSING')) status = 'PROCESSING';
   else if (some('CONFIRMED')) status = 'CONFIRMED';
 
-  await prisma.order.update({ where: { id: orderId }, data: { status } });
+  const data: { status: OrderStatus; paymentStatus?: PaymentStatus } = { status };
+
+  // COD has no gateway, so it only settles to PAID once the order is fully
+  // delivered (cash collected). Gateway orders are already PAID by this point.
+  if (status === 'DELIVERED' && order.paymentMethod === 'COD' && order.paymentStatus !== 'PAID') {
+    data.paymentStatus = 'PAID';
+    await prisma.payment.updateMany({
+      where: { orderId, status: { not: 'PAID' } },
+      data: { status: 'PAID', paidAt: new Date() },
+    });
+  }
+
+  await prisma.order.update({ where: { id: orderId }, data });
 };
 
 export const listStoreSubOrders = async (storeId: string, pagination: Pagination) => {
