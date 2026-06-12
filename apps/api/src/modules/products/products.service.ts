@@ -129,6 +129,14 @@ export const removeProductImage = async (
 
 /* ------------------------------- Public ------------------------------- */
 
+type BrowseSort =
+  | 'relevance'
+  | 'newest'
+  | 'price_asc'
+  | 'price_desc'
+  | 'rating'
+  | 'popular';
+
 interface BrowseFilters {
   search?: string;
   categoryId?: string;
@@ -136,7 +144,8 @@ interface BrowseFilters {
   tag?: string;
   minPrice?: number;
   maxPrice?: number;
-  sort?: 'newest' | 'price_asc' | 'price_desc' | 'rating' | 'popular';
+  minRating?: number;
+  sort?: BrowseSort;
 }
 
 const SORT_MAP: Record<string, Record<string, 1 | -1>> = {
@@ -154,6 +163,7 @@ export const browseProducts = async (pagination: Pagination, filters: BrowseFilt
   if (filters.storeId) filter.storeId = filters.storeId;
   if (filters.tag) filter.tags = filters.tag;
   if (filters.search) filter.$text = { $search: filters.search };
+  if (filters.minRating !== undefined) filter.avgRating = { $gte: filters.minRating };
 
   if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
     filter.price = {};
@@ -161,14 +171,69 @@ export const browseProducts = async (pagination: Pagination, filters: BrowseFilt
     if (filters.maxPrice !== undefined) filter.price.$lte = filters.maxPrice;
   }
 
-  const sort = SORT_MAP[filters.sort ?? 'newest'];
+  // Rank by text-match score when there's a search term and the caller wants
+  // relevance (the default for searches). Mongo needs the textScore projection
+  // for the meta-sort to work.
+  const hasSearch = !!filters.search;
+  const wantsRelevance = filters.sort === 'relevance' || (!filters.sort && hasSearch);
+
+  let query;
+  let sort: Record<string, any>;
+  if (wantsRelevance && hasSearch) {
+    query = Product.find(filter, { score: { $meta: 'textScore' } });
+    sort = { score: { $meta: 'textScore' } };
+  } else {
+    const key = filters.sort && filters.sort !== 'relevance' ? filters.sort : 'newest';
+    query = Product.find(filter);
+    sort = SORT_MAP[key];
+  }
 
   const [items, total] = await Promise.all([
-    Product.find(filter).sort(sort).skip(pagination.skip).limit(pagination.take),
+    query.sort(sort).skip(pagination.skip).limit(pagination.take),
     Product.countDocuments(filter),
   ]);
 
   return { items, meta: buildPaginationMeta(total, pagination.page, pagination.limit) };
+};
+
+// Escape user input before using it in a RegExp.
+const escapeRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Lightweight type-ahead for the header search: substring (prefix-friendly)
+ * matches on product names + a few matching categories. Returns only the
+ * minimal fields the dropdown needs.
+ */
+export const suggestProducts = async (q: string, limit: number) => {
+  const rx = new RegExp(escapeRegex(q), 'i');
+
+  const [products, categories] = await Promise.all([
+    Product.find(
+      { isActive: true, storeActive: true, name: rx },
+      { name: 1, slug: 1, price: 1, images: { $slice: 1 } },
+    )
+      .sort({ soldCount: -1 })
+      .limit(limit)
+      .lean(),
+    Category.find({ isActive: true, name: rx }, { name: 1, slug: 1 })
+      .limit(4)
+      .lean(),
+  ]);
+
+  return {
+    products: products.map((p) => ({
+      _id: String(p._id),
+      name: p.name,
+      slug: p.slug,
+      price: p.price,
+      image: p.images?.[0]?.url ?? null,
+    })),
+    categories: categories.map((c) => ({
+      _id: String(c._id),
+      name: c.name,
+      slug: c.slug,
+    })),
+  };
 };
 
 export const getProductBySlug = async (slug: string): Promise<Record<string, unknown>> => {

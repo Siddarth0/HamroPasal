@@ -52,5 +52,14 @@ export const productQuerySchema = z.object({
   tag: z.string().optional(),
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
-  sort: z.enum(['newest', 'price_asc', 'price_desc', 'rating', 'popular']).optional(),
+  minRating: z.coerce.number().min(0).max(5).optional(),
+  sort: z
+    .enum(['relevance', 'newest', 'price_asc', 'price_desc', 'rating', 'popular'])
+    .optional(),
+});
+
+// Autocomplete suggestions (header search type-ahead).
+export const suggestQuerySchema = z.object({
+  q: z.string().trim().min(1, 'Query is required'),
+  limit: z.coerce.number().int().min(1).max(10).default(6),
 });

@@ -11,6 +11,7 @@ import {
   addImages,
   removeImage,
   browse,
+  suggest,
   getBySlug,
 } from './products.controller';
 
@@ -28,7 +29,8 @@ router.delete('/:id/images', ...seller, removeImage); // publicId in body (Cloud
 
 /* ------------------------------- Public ------------------------------- */
 router.get('/', browse);
-// Keep the slug catch-all last so it doesn't shadow `/mine`.
+router.get('/suggest', suggest);
+// Keep the slug catch-all last so it doesn't shadow `/mine` or `/suggest`.
 router.get('/:slug', getBySlug);
 
 export default router;

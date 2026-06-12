@@ -12,12 +12,14 @@ import {
   removeProductImage,
   browseProducts,
   getProductBySlug,
+  suggestProducts,
 } from './products.service';
 import {
   createProductSchema,
   updateProductSchema,
   removeImageSchema,
   productQuerySchema,
+  suggestQuerySchema,
 } from './products.validation';
 
 /* ------------------------------- Seller ------------------------------- */
@@ -76,6 +78,12 @@ export const browse = asyncHandler(async (req, res) => {
   const filters = productQuerySchema.parse(req.query);
   const { items, meta } = await browseProducts(pagination, filters);
   ApiResponse.paginated(res, items, meta);
+});
+
+export const suggest = asyncHandler(async (req, res) => {
+  const { q, limit } = suggestQuerySchema.parse(req.query);
+  const results = await suggestProducts(q, limit);
+  ApiResponse.success(res, results);
 });
 
 export const getBySlug = asyncHandler(async (req, res) => {
