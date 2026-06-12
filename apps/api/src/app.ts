@@ -63,18 +63,8 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api', apiLimiter);
-
-// Tighter cap on credential endpoints to slow brute-force / credential stuffing.
-// Only failed attempts count, so legitimate logins never lock a user out.
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 min
-  max: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: true,
-});
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
+// Per-endpoint brute-force protection lives in each route via the shared
+// `authLimiter` middleware (see shared/middlewares/rate-limit.ts).
 
 //-------------General middleware-------------
 app.use(compression());

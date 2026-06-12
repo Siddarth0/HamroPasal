@@ -308,14 +308,24 @@ export const upsertGoogleUser = async (profile: {
   name: string;
   avatarUrl?: string;
 }) => {
-  // 1. Already linked? Return that user.
+  // Signing in with Google proves the user owns this email, so the account is
+  // always email-verified afterwards (no OTP step needed for Google users).
+  const ensureVerified = async <T extends { id: string; isEmailVerified: boolean }>(
+    u: T,
+  ): Promise<T> => {
+    if (u.isEmailVerified) return u;
+    await prisma.user.update({ where: { id: u.id }, data: { isEmailVerified: true } });
+    return { ...u, isEmailVerified: true };
+  };
+
+  // 1. Already linked? Return that user (verifying it if it somehow wasn't).
   const linked = await prisma.oAuthAccount.findUnique({
     where: { provider_providerId: { provider: 'GOOGLE', providerId: profile.providerId } },
     select: { user: { select: { id: true, role: true, isEmailVerified: true } } },
   });
-  if (linked) return linked.user;
+  if (linked) return ensureVerified(linked.user);
 
-  // 2. Email already registered (password account)? Link Google to it.
+  // 2. Email already registered (password account)? Link Google + mark verified.
   const existing = await prisma.user.findUnique({
     where: { email: profile.email },
     select: { id: true, role: true, isEmailVerified: true },
@@ -324,7 +334,7 @@ export const upsertGoogleUser = async (profile: {
     await prisma.oAuthAccount.create({
       data: { userId: existing.id, provider: 'GOOGLE', providerId: profile.providerId },
     });
-    return existing;
+    return ensureVerified(existing);
   }
 
   // 3. Brand-new user — Google emails are pre-verified.
