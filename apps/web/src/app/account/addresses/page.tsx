@@ -48,8 +48,8 @@ export default function AddressesPage() {
           {addresses.map((a) => (
             <div key={a.id} className="rounded-2xl border border-border bg-card p-4">
               <div className="flex items-start justify-between gap-3">
-                <div className="text-sm">
-                  <div className="flex items-center gap-2">
+                <div className="min-w-0 text-sm">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="font-medium">
                       {a.fullName} · {a.phone}
                     </span>

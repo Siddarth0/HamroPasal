@@ -36,7 +36,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
 
   return (
     <div className="container py-8">
-      <div className="grid gap-6 lg:grid-cols-[230px_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[230px_1fr]">
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <nav className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 lg:mx-0 lg:flex-col lg:gap-1 lg:overflow-visible lg:px-0">
             {nav.map(({ href, label, icon: Icon }) => {

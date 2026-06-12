@@ -39,10 +39,10 @@ export default function OrdersPage() {
             <Link
               key={o.id}
               href={`/orders/${o.id}`}
-              className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 transition-shadow hover:shadow-md"
+              className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 transition-shadow hover:shadow-md sm:gap-4"
             >
-              <div>
-                <div className="flex items-center gap-2">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="font-medium">Order #{o.id.slice(0, 8)}</span>
                   <StatusBadge status={o.status} />
                 </div>
@@ -51,7 +51,7 @@ export default function OrdersPage() {
                   {o.subOrders.length !== 1 ? 's' : ''} · {o.paymentMethod}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="shrink-0 text-right">
                 <p className="font-display font-bold text-brand">{formatPrice(o.totalAmount)}</p>
                 <p className="text-xs text-muted-foreground">View →</p>
               </div>
