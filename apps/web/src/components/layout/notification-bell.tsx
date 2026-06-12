@@ -32,6 +32,17 @@ export function NotificationBell() {
   const { data } = useNotifications();
   const items = (data?.items ?? []).slice(0, 6);
 
+  // Opening the panel counts as "seen" — clear the unread badge immediately
+  // (optimistic) and persist it, so users don't have to hit "Mark all read".
+  useEffect(() => {
+    if (!open || unread === 0) return;
+    qc.setQueryData(['notif-unread'], 0);
+    markAllNotificationsRead()
+      .then(() => qc.invalidateQueries({ queryKey: ['notifications'] }))
+      .catch(() => qc.invalidateQueries({ queryKey: ['notif-unread'] }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   const markAll = async () => {
     await markAllNotificationsRead();
     qc.invalidateQueries({ queryKey: ['notifications'] });

@@ -9,7 +9,7 @@ import { AuthShell, FieldError, FormAlert } from '@/components/auth/auth-shell';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { verifyEmail, resendVerification } from '@/features/auth/api';
+import { verifyEmail, resendVerification, getMe } from '@/features/auth/api';
 import { useAuthStore } from '@/store/auth';
 import { getApiErrorMessage } from '@/lib/api';
 
@@ -23,6 +23,7 @@ function VerifyForm() {
   const router = useRouter();
   const params = useSearchParams();
   const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [resentMsg, setResentMsg] = useState<string | null>(null);
@@ -47,6 +48,14 @@ function VerifyForm() {
     setError(null);
     try {
       await verifyEmail(v);
+      // Refresh the in-memory user so the "Verify" badge clears immediately
+      // (the DB is now verified; without this the SPA keeps the stale value).
+      try {
+        const me = await getMe();
+        setUser(me);
+      } catch {
+        /* not logged in on this device — will reflect on next login */
+      }
       router.replace('/');
     } catch (e) {
       setError(getApiErrorMessage(e, 'Invalid or expired code'));
