@@ -154,7 +154,7 @@ export function StorePage({ slug }: { slug: string }) {
       )}
 
       {/* Catalog */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-[220px_1fr]">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
         {/* Category sidebar */}
         <aside className="hidden h-fit overflow-hidden rounded-2xl border border-border bg-background lg:block">
           <div className="border-b border-border px-4 py-3 text-sm font-semibold">Categories</div>
@@ -187,10 +187,10 @@ export function StorePage({ slug }: { slug: string }) {
           </ul>
         </aside>
 
-        <div>
+        <div className="min-w-0">
           {/* Mobile category chips + sort */}
           <div className="mb-4 flex items-center justify-between gap-3">
-            <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 lg:hidden">
+            <div className="no-scrollbar -mx-1 flex min-w-0 flex-1 gap-2 overflow-x-auto px-1 lg:hidden">
               <button
                 onClick={() => setSelectedCat('all')}
                 className={cn(
@@ -216,7 +216,7 @@ export function StorePage({ slug }: { slug: string }) {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as Sort)}
-              className="ml-auto h-10 w-48 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="ml-auto h-10 w-36 shrink-0 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring sm:w-48"
             >
               {SORTS.map((s) => (
                 <option key={s.value} value={s.value}>

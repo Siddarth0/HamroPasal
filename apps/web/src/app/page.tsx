@@ -12,7 +12,7 @@ export default function HomePage() {
     <>
       {/* Daraz-style: category sidebar + hero */}
       <section className="container pt-6">
-        <div className="grid gap-5 lg:grid-cols-[250px_1fr]">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[250px_1fr]">
           <CategorySidebar className="hidden lg:block" />
           <HeroBanner />
         </div>

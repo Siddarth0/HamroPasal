@@ -70,9 +70,9 @@ export function BestSellingStore() {
         </Link>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         {/* Featured mall — on-brand gradient */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-navy to-brand">
+        <div className="relative min-w-0 overflow-hidden rounded-2xl bg-gradient-to-br from-navy to-brand">
           <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
           <div className="relative flex h-full min-h-[150px] flex-col justify-end p-5 md:min-h-[300px] md:p-6">
             <span className="mb-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
@@ -87,7 +87,7 @@ export function BestSellingStore() {
         </div>
 
         {/* Real stores */}
-        <div className="grid gap-4 sm:grid-cols-2 md:col-span-2">
+        <div className="grid grid-cols-1 min-w-0 gap-4 sm:grid-cols-2 md:col-span-2">
           {isLoading && stores.length === 0
             ? Array.from({ length: 4 }).map((_, i) => <StoreCardSkeleton key={i} />)
             : stores.map((s) => <RealStoreCard key={s.id} store={s} />)}

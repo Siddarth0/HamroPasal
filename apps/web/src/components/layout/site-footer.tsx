@@ -103,7 +103,7 @@ export function SiteFooter() {
           <p className="text-xs text-white/40">
             © {new Date().getFullYear()} HamroPasal. All rights reserved.
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             <span className="text-xs text-white/40">We accept</span>
             {payments.map((p) => (
               <span

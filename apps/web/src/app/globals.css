@@ -44,8 +44,18 @@
   * {
     @apply border-border;
   }
+  /* Mobile-first guard: stop any stray horizontal overflow from inflating the
+     page width (which makes other sections + product images render too large
+     and pushes the fixed bottom nav off-screen). Set on the root element, which
+     is already the scroll container, so `position: sticky` keeps working.
+     (Note: `overflow-x: clip` is unreliable here — Chromium doesn't always
+     propagate `clip` from the root to the viewport. `hidden` does.) */
+  html {
+    overflow-x: hidden;
+  }
   body {
     @apply bg-muted/40 text-foreground font-sans antialiased;
+    max-width: 100%;
   }
   h1, h2, h3, h4 {
     @apply font-display;
