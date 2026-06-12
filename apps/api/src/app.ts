@@ -36,6 +36,11 @@ import { errorHandler } from '@/shared/middlewares/error.handler';
 
 const app: Application = express();
 
+// Render/Vercel sit behind a reverse proxy. Trust the first hop so req.ip is the
+// real client IP — otherwise rate limiting keys on the proxy IP and every visitor
+// shares one global bucket (a single user's traffic 429s the whole site).
+app.set('trust proxy', 1);
+
 //-----------Security-----------------------
 app.use(helmet());
 app.use(
@@ -50,13 +55,26 @@ app.use(
 );
 
 //------------Rate limiting-----------------
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, //15 min
-  max: 100,
+// Generous global cap per IP — the storefront fires many parallel reads per page.
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use('/api', limiter);
+app.use('/api', apiLimiter);
+
+// Tighter cap on credential endpoints to slow brute-force / credential stuffing.
+// Only failed attempts count, so legitimate logins never lock a user out.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 //-------------General middleware-------------
 app.use(compression());
