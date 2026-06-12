@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { tabs, recommended, mockToCard } from '@/lib/mock';
 import { ProductCard } from './product-card';
 import { ProductCardSkeletonRow } from './skeletons';
 import { useProducts } from '@/features/catalog/hooks';
 import { productToCard, type ProductQuery } from '@/features/catalog/api';
+
+const tabs = ['Best Seller', 'New Arrivals', 'Budget Picks', 'Top Rated', 'Trending'];
 
 // Each tab maps to a sort; "Best Seller" lands first.
 const tabSort: NonNullable<ProductQuery['sort']>[] = [
@@ -22,7 +23,7 @@ export function TodaysForYou() {
   const { data, isLoading } = useProducts({ sort: tabSort[active] ?? 'newest', limit: 12 });
   const live = data?.items ?? [];
   const showSkeleton = isLoading && live.length === 0;
-  const products = live.length ? live.map(productToCard) : recommended.map(mockToCard);
+  const products = live.map(productToCard);
 
   return (
     <section className="container mt-10">
@@ -46,13 +47,17 @@ export function TodaysForYou() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {showSkeleton ? (
-          <ProductCardSkeletonRow count={12} />
-        ) : (
-          products.map((p) => <ProductCard key={p.id} product={p} mode="rating" />)
-        )}
-      </div>
+      {!showSkeleton && products.length === 0 ? (
+        <p className="py-10 text-center text-sm text-muted-foreground">No products in this category yet.</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {showSkeleton ? (
+            <ProductCardSkeletonRow count={12} />
+          ) : (
+            products.map((p) => <ProductCard key={p.id} product={p} mode="rating" />)
+          )}
+        </div>
+      )}
     </section>
   );
 }

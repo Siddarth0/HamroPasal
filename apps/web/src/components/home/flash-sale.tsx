@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Zap, ChevronLeft, ChevronRight } from 'lucide-react';
-import { flashSale, mockToCard } from '@/lib/mock';
 import { ProductCard } from './product-card';
 import { ProductCardSkeleton } from './skeletons';
 import { useProducts } from '@/features/catalog/hooks';
@@ -36,9 +35,12 @@ export function FlashSale() {
   const { data, isLoading } = useProducts({ sort: 'popular', limit: 10 });
   const live = data?.items ?? [];
   const showSkeleton = isLoading && live.length === 0;
-  const products = live.length ? live.map(productToCard) : flashSale.map(mockToCard);
+  const products = live.map(productToCard);
   const countdown = useEndOfDayCountdown();
   const scroller = useRef<HTMLDivElement>(null);
+
+  // No live products and nothing loading → hide the section entirely.
+  if (!isLoading && products.length === 0) return null;
 
   const scroll = (dir: -1 | 1) => {
     scroller.current?.scrollBy({ left: dir * scroller.current.clientWidth * 0.85, behavior: 'smooth' });

@@ -1,11 +1,9 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { img } from '@/lib/mock';
 
 interface Slide {
   tag: string;
@@ -13,7 +11,7 @@ interface Slide {
   sub: string;
   cta: string;
   href: string;
-  seed: string;
+  bg: string;
 }
 
 const slides: Slide[] = [
@@ -29,7 +27,7 @@ const slides: Slide[] = [
     sub: 'Redefine your everyday style.',
     cta: 'Shop the sale',
     href: '/products?sort=popular',
-    seed: 'hero-fashion',
+    bg: 'bg-gradient-to-br from-brand/25 via-background to-background',
   },
   {
     tag: 'Fresh This Week',
@@ -43,7 +41,7 @@ const slides: Slide[] = [
     sub: 'Be the first to wear what’s next.',
     cta: 'Explore new',
     href: '/products?sort=newest',
-    seed: 'hero-arrivals',
+    bg: 'bg-gradient-to-br from-navy/20 via-background to-brand/10',
   },
   {
     tag: 'Made in Nepal',
@@ -57,7 +55,7 @@ const slides: Slide[] = [
     sub: 'Thousands of verified sellers, one cart.',
     cta: 'Browse stores',
     href: '/products',
-    seed: 'hero-stores',
+    bg: 'bg-gradient-to-br from-brand/15 via-background to-navy/15',
   },
 ];
 
@@ -82,32 +80,26 @@ export function HeroBanner() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Crossfading imagery */}
+      {/* Crossfading on-brand gradient backgrounds */}
       <div className="absolute inset-0">
         {slides.map((s, i) => (
-          <Image
-            key={s.seed}
-            src={img(s.seed, 1000)}
-            alt=""
-            fill
-            sizes="(min-width: 1024px) 60vw, 100vw"
-            priority={i === 0}
+          <div
+            key={i}
             className={cn(
-              'object-cover transition-opacity duration-1000 ease-out',
+              'absolute inset-0 transition-opacity duration-1000 ease-out',
+              s.bg,
               i === index ? 'opacity-100' : 'opacity-0',
             )}
           />
         ))}
-        {/* Keep text legible + blend into the panel */}
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/20 md:to-transparent" />
       </div>
 
       {/* Brand glow accents */}
-      <div className="pointer-events-none absolute -left-16 -top-16 h-52 w-52 rounded-full bg-brand/15 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-20 left-1/4 h-48 w-48 rounded-full bg-navy/10 blur-3xl" />
+      <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-brand/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 right-1/4 h-48 w-48 rounded-full bg-navy/10 blur-3xl" />
 
       {/* Copy */}
-      <div className="relative z-10 flex h-full flex-col justify-center p-8 md:max-w-[58%] md:p-12">
+      <div className="relative z-10 flex h-full flex-col justify-center p-8 md:max-w-[62%] md:p-12">
         <div key={index} className="duration-700 animate-in fade-in slide-in-from-bottom-4">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand">
             <span className="h-1.5 w-1.5 rounded-full bg-brand" />
@@ -131,7 +123,7 @@ export function HeroBanner() {
           <div className="flex gap-1.5">
             {slides.map((s, i) => (
               <button
-                key={s.seed}
+                key={i}
                 onClick={() => go(i)}
                 aria-label={`Go to slide ${i + 1}`}
                 className={cn(

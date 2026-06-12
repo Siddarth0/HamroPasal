@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCategories } from '@/features/catalog/hooks';
-import { img } from '@/lib/mock';
 
 export default function CategoriesPage() {
   const { data, isLoading } = useCategories();
@@ -29,14 +28,18 @@ export default function CategoriesPage() {
               href={`/category/${c.slug}`}
               className="group rounded-2xl border border-border bg-card p-5 text-center transition-shadow hover:shadow-md"
             >
-              <div className="mx-auto mb-3 h-20 w-20 overflow-hidden rounded-full ring-1 ring-border">
-                <Image
-                  src={c.image?.url ?? img(c.slug, 120)}
-                  alt={c.name}
-                  width={80}
-                  height={80}
-                  className="h-full w-full object-cover"
-                />
+              <div className="mx-auto mb-3 grid h-20 w-20 place-items-center overflow-hidden rounded-full bg-muted font-display text-2xl font-bold text-muted-foreground ring-1 ring-border">
+                {c.image?.url ? (
+                  <Image
+                    src={c.image.url}
+                    alt={c.name}
+                    width={80}
+                    height={80}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  c.name.charAt(0)
+                )}
               </div>
               <p className="text-sm font-medium group-hover:text-brand">{c.name}</p>
             </Link>
