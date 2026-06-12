@@ -46,9 +46,29 @@ export interface ProductQuery {
   search?: string;
   categoryId?: string;
   storeId?: string;
-  sort?: 'newest' | 'price_asc' | 'price_desc' | 'rating' | 'popular';
+  sort?: 'relevance' | 'newest' | 'price_asc' | 'price_desc' | 'rating' | 'popular';
   minPrice?: number;
   maxPrice?: number;
+  minRating?: number;
+}
+
+export interface ProductSuggestion {
+  _id: string;
+  name: string;
+  slug: string;
+  price: number;
+  image: string | null;
+}
+
+export interface CategorySuggestion {
+  _id: string;
+  name: string;
+  slug: string;
+}
+
+export interface SuggestResult {
+  products: ProductSuggestion[];
+  categories: CategorySuggestion[];
 }
 
 /* ---- Fetchers ---- */
@@ -62,6 +82,13 @@ export async function fetchProducts(
 
 export async function fetchCategories(): Promise<ApiCategory[]> {
   const { data } = await api.get<ApiEnvelope<ApiCategory[]>>('/categories');
+  return data.data;
+}
+
+export async function fetchSuggestions(q: string, limit = 6): Promise<SuggestResult> {
+  const { data } = await api.get<ApiEnvelope<SuggestResult>>('/products/suggest', {
+    params: { q, limit },
+  });
   return data.data;
 }
 

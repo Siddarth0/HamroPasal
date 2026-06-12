@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
   fetchProducts,
   fetchCategories,
@@ -6,11 +6,24 @@ import {
   fetchProductBySlug,
   fetchCategoryBySlug,
   fetchStoreBySlug,
+  fetchSuggestions,
   type ProductQuery,
 } from './api';
 
 export function useCategories() {
   return useQuery({ queryKey: ['categories'], queryFn: fetchCategories });
+}
+
+/** Header type-ahead. Pass an already-debounced query; only fires for 2+ chars. */
+export function useSuggestions(q: string) {
+  const term = q.trim();
+  return useQuery({
+    queryKey: ['suggest', term],
+    queryFn: () => fetchSuggestions(term),
+    enabled: term.length >= 2,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
 }
 
 export function useProducts(params: ProductQuery = {}) {
