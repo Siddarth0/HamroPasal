@@ -83,23 +83,25 @@ It's built as a **Turborepo monorepo** with **three separate frontends** (custom
 
 ## 📸 Screenshots
 
-> Drop your images into `docs/screenshots/` using the filenames below and they'll render here.
-
-| Storefront | Product detail |
+| Storefront home | Product detail |
 | --- | --- |
 | ![Storefront home](docs/screenshots/web-home.png) | ![Product detail](docs/screenshots/web-product.png) |
 
-| Cart & checkout | Seller dashboard |
+| Cart | Checkout |
 | --- | --- |
-| ![Checkout](docs/screenshots/web-checkout.png) | ![Seller dashboard](docs/screenshots/seller-dashboard.png) |
+| ![Cart](docs/screenshots/web-cart.png) | ![Checkout](docs/screenshots/web-checkout.png) |
 
-| Store page | Admin panel |
+| Store page | Mobile storefront |
 | --- | --- |
-| ![Store page](docs/screenshots/web-store.png) | ![Admin panel](docs/screenshots/admin-dashboard.png) |
+| ![Store page](docs/screenshots/web-store.png) | ![Mobile](docs/screenshots/web-mobile.png) |
 
-| Mobile storefront | Real-time chat |
+| Seller dashboard | Admin panel |
 | --- | --- |
-| ![Mobile](docs/screenshots/web-mobile.png) | ![Chat](docs/screenshots/seller-chat.png) |
+| ![Seller dashboard](docs/screenshots/seller-dashboard.png) | ![Admin panel](docs/screenshots/admin-dashboard.png) |
+
+| Seller ↔ customer chat | Product Q&A inbox |
+| --- | --- |
+| ![Chat](docs/screenshots/seller-chat.png) | ![Q&A](docs/screenshots/seller-question.png) |
 
 ---
 
