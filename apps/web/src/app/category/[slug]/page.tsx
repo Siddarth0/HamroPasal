@@ -1,35 +1,50 @@
-'use client';
+import type { Metadata } from 'next';
+import { CategoryView } from '@/components/catalog/category-view';
+import { JsonLd } from '@/components/seo/json-ld';
+import { getCategory, buildMetadata, breadcrumbLd, SITE_NAME } from '@/lib/seo';
 
-import { Suspense } from 'react';
-import Link from 'next/link';
-import { useCategory } from '@/features/catalog/hooks';
-import { ProductBrowse } from '@/components/catalog/product-browse';
-
-function CategoryView({ slug }: { slug: string }) {
-  const { data, isLoading, isError } = useCategory(slug);
-
-  if (isError) {
-    return (
-      <div className="container py-20 text-center">
-        <p className="font-medium">Category not found</p>
-        <Link href="/products" className="mt-2 inline-block text-sm text-brand hover:underline">
-          Browse all products →
-        </Link>
-      </div>
-    );
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const category = await getCategory(params.slug);
+  if (!category) {
+    return buildMetadata({
+      title: 'Category not found',
+      description: 'This category is no longer available.',
+      path: `/category/${params.slug}`,
+      noindex: true,
+    });
   }
 
-  if (isLoading || !data) {
-    return <div className="container py-20 text-center text-sm text-muted-foreground">Loading…</div>;
-  }
+  const description =
+    category.description?.slice(0, 155) ??
+    `Shop ${category.name} online in Nepal on ${SITE_NAME}. Compare prices from local sellers and order with fast delivery and easy payment.`;
 
-  return <ProductBrowse categoryId={data._id} heading={data.name} />;
+  return buildMetadata({
+    title: `${category.name} — Buy Online in Nepal`,
+    description,
+    path: `/category/${category.slug}`,
+    image: category.image?.url ?? null,
+    keywords: [category.name, `${category.name} Nepal`, `buy ${category.name} online`],
+  });
 }
 
-export default function CategoryPage({ params }: { params: { slug: string } }) {
+export default async function CategoryPage({ params }: { params: { slug: string } }) {
+  const category = await getCategory(params.slug);
+  const crumbs = category
+    ? breadcrumbLd([
+        { name: SITE_NAME, path: '/' },
+        { name: 'Categories', path: '/categories' },
+        { name: category.name, path: `/category/${category.slug}` },
+      ])
+    : null;
+
   return (
-    <Suspense>
+    <>
+      {crumbs && <JsonLd data={crumbs} />}
       <CategoryView slug={params.slug} />
-    </Suspense>
+    </>
   );
 }

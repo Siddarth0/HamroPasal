@@ -7,6 +7,14 @@ import { TopBar } from '@/components/layout/top-bar';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
+import { JsonLd } from '@/components/seo/json-ld';
+import {
+  SITE_NAME,
+  SITE_URL,
+  SITE_DESCRIPTION,
+  organizationLd,
+  websiteLd,
+} from '@/lib/seo';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -23,15 +31,53 @@ const dancing = Dancing_Script({
 });
 
 export const metadata: Metadata = {
-  title: 'HamroPasal — Nepal’s Online Marketplace',
-  description:
-    'Shop from thousands of local sellers across Nepal. Fashion, electronics, home & more — delivered to your door.',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} — Nepal’s Online Marketplace`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: [
+    'online shopping Nepal',
+    'buy online Nepal',
+    'ecommerce Nepal',
+    'marketplace Nepal',
+    'HamroPasal',
+    'eSewa',
+    'Khalti',
+    'cash on delivery',
+    'electronics',
+    'fashion',
+  ],
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — Nepal’s Online Marketplace`,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    locale: 'en_NP',
+    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: SITE_NAME }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${SITE_NAME} — Nepal’s Online Marketplace`,
+    description: SITE_DESCRIPTION,
+    images: ['/og-default.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${poppins.variable} ${dancing.variable}`}>
       <body>
+        <JsonLd data={[organizationLd(), websiteLd()]} />
         <Providers>
           <TopBar />
           <SiteHeader />
