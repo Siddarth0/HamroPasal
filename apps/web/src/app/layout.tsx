@@ -78,6 +78,7 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
   },
+  verification: { google: 'MHv931FFXlO-K5NjjOgBl4kioGEtTQwRl8wuhmvtKJw' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
