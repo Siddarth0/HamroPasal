@@ -28,3 +28,22 @@ export interface SellerStats {
     price: number;
   }>;
 }
+
+export type SellerTimeseriesRange = '30d' | '90d' | '12m';
+
+/** One bucket (day or month) of a seller's sales trend. */
+export interface SellerTimeseriesPoint {
+  date: string; // bucket start, YYYY-MM-DD
+  orders: number; // sub-orders placed in the bucket
+  sales: number; // subtotal of non-cancelled/refunded sub-orders
+  earnings: number; // sellerEarning of delivered sub-orders
+}
+
+/** A product running low on stock (product-level or any variant). */
+export interface LowStockProduct {
+  _id: string;
+  name: string;
+  slug: string;
+  stock: number; // lowest stock across the product/variants
+  hasVariants: boolean;
+}
