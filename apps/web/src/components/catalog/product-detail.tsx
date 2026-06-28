@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -11,8 +11,11 @@ import type { ApiVariant } from '@/features/catalog/api';
 import { addToCart } from '@/features/cart/api';
 import { useAuthStore } from '@/store/auth';
 import { useChatUI } from '@/store/chat-ui';
+import { useRecentlyViewed } from '@/store/recently-viewed';
+import { useSimilar, useBoughtTogether } from '@/features/recommendations/hooks';
 import { Button } from '@/components/ui/button';
 import { ProductTabs } from './product-tabs';
+import { ProductRail } from './product-rail';
 import { VariantPicker } from './variant-picker';
 import { cn, formatPrice } from '@/lib/utils';
 import { getApiErrorMessage } from '@/lib/api';
@@ -25,7 +28,17 @@ export function ProductDetail({ slug }: { slug: string }) {
   const queryClient = useQueryClient();
   const status = useAuthStore((s) => s.status);
   const openChat = useChatUI((s) => s.openDraft);
+  const recordView = useRecentlyViewed((s) => s.record);
   const { data: product, isLoading, isError } = useProduct(slug);
+
+  const productId = product?._id;
+  const { data: boughtTogether, isLoading: btLoading } = useBoughtTogether(productId);
+  const { data: similar, isLoading: similarLoading } = useSimilar(productId);
+
+  // Track this product as "recently viewed" once it loads.
+  useEffect(() => {
+    if (productId) recordView(productId);
+  }, [productId, recordView]);
 
   const [activeImage, setActiveImage] = useState(0);
   const [variant, setVariant] = useState<ApiVariant | null>(null);
@@ -332,6 +345,14 @@ export function ProductDetail({ slug }: { slug: string }) {
         avgRating={product.avgRating ?? 0}
         reviewCount={product.reviewCount ?? 0}
       />
+
+      {/* Recommendation rails */}
+      <ProductRail
+        title="Frequently bought together"
+        products={boughtTogether}
+        isLoading={btLoading}
+      />
+      <ProductRail title="You may also like" products={similar} isLoading={similarLoading} />
     </div>
   );
 }

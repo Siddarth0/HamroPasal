@@ -6,6 +6,8 @@ import { TodaysForYou } from '@/components/home/todays-for-you';
 import { BestSellingStore } from '@/components/home/best-selling-store';
 import { ExploreMore } from '@/components/home/explore-more';
 import { QuoteBanner } from '@/components/home/quote-banner';
+import { RecommendedForYou } from '@/components/home/recommended-for-you';
+import { RecentlyViewed } from '@/components/home/recently-viewed';
 
 export default function HomePage() {
   return (
@@ -20,8 +22,10 @@ export default function HomePage() {
 
       <CategoryCircles />
       <FlashSale />
+      <RecommendedForYou />
       <TodaysForYou />
       <BestSellingStore />
+      <RecentlyViewed />
       <ExploreMore />
       <QuoteBanner />
       <div className="h-6" />
