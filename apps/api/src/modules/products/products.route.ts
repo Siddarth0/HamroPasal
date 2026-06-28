@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '@/shared/middlewares/auth.guard';
+import { authenticate, optionalAuthenticate } from '@/shared/middlewares/auth.guard';
 import { authorize } from '@/shared/middlewares/role.guard';
 import { upload } from '@/shared/middlewares/upload';
 import {
@@ -13,6 +13,10 @@ import {
   browse,
   suggest,
   getBySlug,
+  similar,
+  boughtTogether,
+  recommended,
+  byIds,
 } from './products.controller';
 
 const router = Router();
@@ -30,7 +34,11 @@ router.delete('/:id/images', ...seller, removeImage); // publicId in body (Cloud
 /* ------------------------------- Public ------------------------------- */
 router.get('/', browse);
 router.get('/suggest', suggest);
-// Keep the slug catch-all last so it doesn't shadow `/mine` or `/suggest`.
+router.get('/recommended', optionalAuthenticate, recommended); // personalized if logged in
+router.get('/by-ids', byIds); // hydrate client-stored "recently viewed" ids
+router.get('/:id/similar', similar);
+router.get('/:id/bought-together', boughtTogether);
+// Keep the slug catch-all last so it doesn't shadow `/mine`, `/suggest`, etc.
 router.get('/:slug', getBySlug);
 
 export default router;

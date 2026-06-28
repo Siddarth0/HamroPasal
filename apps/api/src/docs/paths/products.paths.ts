@@ -89,6 +89,43 @@ export const productsPaths = {
       },
     },
   },
+  '/products/recommended': {
+    get: {
+      tags,
+      summary: 'Recommended products (public; personalized when authenticated)',
+      description:
+        'Logged-in users get products from categories they buy/wishlist (excluding owned items); guests get the most popular products.',
+      security: [{}, ...bearer],
+      parameters: [{ name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 20 } }],
+      responses: { 200: ok({ type: 'array', items: ref('Product') }) },
+    },
+  },
+  '/products/by-ids': {
+    get: {
+      tags,
+      summary: 'Hydrate products by id list (public)',
+      description: 'Resolves a comma-separated list of product ids into cards (e.g. for "recently viewed"), preserving order.',
+      parameters: [{ name: 'ids', in: 'query', required: true, schema: { type: 'string' }, description: 'Comma-separated product ids (max 20)' }],
+      responses: { 200: ok({ type: 'array', items: ref('Product') }) },
+    },
+  },
+  '/products/{id}/similar': {
+    get: {
+      tags,
+      summary: 'Similar products ("you may also like", public)',
+      parameters: [idParam, { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 20 } }],
+      responses: { 200: ok({ type: 'array', items: ref('Product') }), 404: E[404] },
+    },
+  },
+  '/products/{id}/bought-together': {
+    get: {
+      tags,
+      summary: 'Frequently bought together (public)',
+      description: 'Products that co-occur in past orders with this product, ranked by co-purchase frequency.',
+      parameters: [idParam, { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 20 } }],
+      responses: { 200: ok({ type: 'array', items: ref('Product') }), 404: E[404] },
+    },
+  },
   '/products/mine': {
     get: {
       tags,

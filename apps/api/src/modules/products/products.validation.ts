@@ -63,3 +63,16 @@ export const suggestQuerySchema = z.object({
   q: z.string().trim().min(1, 'Query is required'),
   limit: z.coerce.number().int().min(1).max(10).default(6),
 });
+
+// Recommendation rails (similar / bought-together / recommended).
+export const recommendQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(20).default(8),
+});
+
+// "Recently viewed" hydration — comma-separated product ids.
+export const byIdsQuerySchema = z.object({
+  ids: z
+    .string()
+    .transform((s) => s.split(',').map((x) => x.trim()).filter(Boolean).slice(0, 20))
+    .pipe(z.array(z.string()).min(1, 'ids is required')),
+});

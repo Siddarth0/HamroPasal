@@ -15,11 +15,19 @@ import {
   suggestProducts,
 } from './products.service';
 import {
+  getSimilarProducts,
+  getBoughtTogether,
+  getRecommendedProducts,
+  getProductsByIds,
+} from './recommendations.service';
+import {
   createProductSchema,
   updateProductSchema,
   removeImageSchema,
   productQuerySchema,
   suggestQuerySchema,
+  recommendQuerySchema,
+  byIdsQuerySchema,
 } from './products.validation';
 
 /* ------------------------------- Seller ------------------------------- */
@@ -89,4 +97,31 @@ export const suggest = asyncHandler(async (req, res) => {
 export const getBySlug = asyncHandler(async (req, res) => {
   const product = await getProductBySlug(String(req.params.slug));
   ApiResponse.success(res, product);
+});
+
+/* --------------------------- Recommendations -------------------------- */
+
+export const similar = asyncHandler(async (req, res) => {
+  const { limit } = recommendQuerySchema.parse(req.query);
+  const items = await getSimilarProducts(String(req.params.id), limit);
+  ApiResponse.success(res, items);
+});
+
+export const boughtTogether = asyncHandler(async (req, res) => {
+  const { limit } = recommendQuerySchema.parse(req.query);
+  const items = await getBoughtTogether(String(req.params.id), limit);
+  ApiResponse.success(res, items);
+});
+
+// Personalized when authenticated (optional auth), popular otherwise.
+export const recommended = asyncHandler(async (req, res) => {
+  const { limit } = recommendQuerySchema.parse(req.query);
+  const items = await getRecommendedProducts(req.user?.userId, limit);
+  ApiResponse.success(res, items);
+});
+
+export const byIds = asyncHandler(async (req, res) => {
+  const { ids } = byIdsQuerySchema.parse(req.query);
+  const items = await getProductsByIds(ids);
+  ApiResponse.success(res, items);
 });

@@ -45,3 +45,22 @@ export const authenticate = async (
     next(err);
   }
 };
+
+/**
+ * Best-effort authentication: attaches `req.user` when a valid token is
+ * present, but never rejects the request. Use on public endpoints that
+ * personalize their response for logged-in users (e.g. recommendations).
+ */
+export const optionalAuthenticate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const header = req.headers.authorization;
+  if (!header?.startsWith("Bearer ")) {
+    next();
+    return;
+  }
+  // Reuse the strict guard, but swallow auth failures and continue as a guest.
+  authenticate(req, res, (err?: unknown) => next(err instanceof ApiError ? undefined : err));
+};
