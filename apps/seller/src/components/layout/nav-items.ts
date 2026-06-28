@@ -1,5 +1,6 @@
 import {
   LayoutDashboard,
+  BarChart3,
   Package,
   ClipboardList,
   Store,
@@ -19,6 +20,7 @@ export interface NavItem {
 
 export const NAV: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/products', label: 'Products', icon: Package },
   { href: '/orders', label: 'Orders', icon: ClipboardList },
   { href: '/messages', label: 'Messages', icon: MessageSquare },
