@@ -39,6 +39,15 @@ export async function fetchOrder(id: string): Promise<Order> {
   return data.data;
 }
 
+export interface OrderListSubOrder {
+  id: string;
+  storeId: string;
+  status: string;
+  subtotal: number;
+  shippingFee: number;
+  orderItems: { id: string; name: string; imageUrl?: string | null; quantity: number }[];
+}
+
 export interface OrderListItem {
   id: string;
   status: string;
@@ -46,7 +55,7 @@ export interface OrderListItem {
   paymentMethod: string;
   totalAmount: number;
   createdAt: string;
-  subOrders: { id: string; storeId: string; status: string; subtotal: number; shippingFee: number }[];
+  subOrders: OrderListSubOrder[];
 }
 
 export async function fetchMyOrders(

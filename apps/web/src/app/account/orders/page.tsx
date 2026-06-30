@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import { fetchMyOrders } from '@/features/orders/api';
@@ -35,28 +36,58 @@ export default function OrdersPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {orders.map((o) => (
-            <Link
-              key={o.id}
-              href={`/orders/${o.id}`}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 transition-shadow hover:shadow-md sm:gap-4"
-            >
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="font-medium">Order #{o.id.slice(0, 8)}</span>
-                  <StatusBadge status={o.status} />
+          {orders.map((o) => {
+            const items = o.subOrders.flatMap((s) => s.orderItems);
+            const totalQty = items.reduce((n, it) => n + it.quantity, 0);
+            const preview = items.slice(0, 4);
+            const summary =
+              items.length === 0
+                ? 'Order details'
+                : items.length === 1
+                  ? items[0].name
+                  : `${items[0].name} + ${items.length - 1} more item${items.length - 1 !== 1 ? 's' : ''}`;
+
+            return (
+              <Link
+                key={o.id}
+                href={`/orders/${o.id}`}
+                className="block rounded-2xl border border-border bg-card p-4 transition-shadow hover:shadow-md"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="font-medium">Order #{o.id.slice(0, 8)}</span>
+                    <StatusBadge status={o.status} />
+                  </div>
+                  <p className="shrink-0 font-display font-bold text-brand">{formatPrice(o.totalAmount)}</p>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {new Date(o.createdAt).toLocaleDateString()} · {o.subOrders.length} store
-                  {o.subOrders.length !== 1 ? 's' : ''} · {o.paymentMethod}
-                </p>
-              </div>
-              <div className="shrink-0 text-right">
-                <p className="font-display font-bold text-brand">{formatPrice(o.totalAmount)}</p>
-                <p className="text-xs text-muted-foreground">View →</p>
-              </div>
-            </Link>
-          ))}
+
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="flex shrink-0 -space-x-2">
+                    {preview.map((it) => (
+                      <span
+                        key={it.id}
+                        className="relative h-11 w-11 overflow-hidden rounded-lg border-2 border-card bg-muted"
+                      >
+                        {it.imageUrl ? (
+                          <Image src={it.imageUrl} alt={it.name} fill className="object-cover" sizes="44px" />
+                        ) : (
+                          <Package className="absolute inset-0 m-auto h-4 w-4 text-muted-foreground" />
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-1 text-sm font-medium">{summary}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {totalQty} item{totalQty !== 1 ? 's' : ''} · {new Date(o.createdAt).toLocaleDateString()} ·{' '}
+                      {o.paymentMethod}
+                    </p>
+                  </div>
+                  <span className="shrink-0 self-center text-xs text-muted-foreground">View →</span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
 

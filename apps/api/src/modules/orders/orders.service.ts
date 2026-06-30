@@ -347,7 +347,17 @@ export const listMyOrders = async (userId: string, pagination: Pagination) => {
       take: pagination.take,
       include: {
         subOrders: {
-          select: { id: true, storeId: true, status: true, subtotal: true, shippingFee: true },
+          select: {
+            id: true,
+            storeId: true,
+            status: true,
+            subtotal: true,
+            shippingFee: true,
+            // Item names + thumbnails so the list can preview what was ordered.
+            orderItems: {
+              select: { id: true, name: true, imageUrl: true, quantity: true },
+            },
+          },
         },
       },
     }),
